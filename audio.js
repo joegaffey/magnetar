@@ -1,3 +1,12 @@
+const midiToFreq = (n) => 440 * Math.pow(2, (n - 69) / 12);
+const ROOTS = [50, 45, 47, 43];
+const CHORDS = [
+  [50, 54, 57],
+  [45, 49, 52],
+  [47, 50, 54],
+  [43, 47, 50]
+];
+
 export class AudioEngine {
   constructor() {
     this.ctx = null;
@@ -7,6 +16,12 @@ export class AudioEngine {
     this.overheatNode = null;
     this.muted = false;
     this.volume = 0.85;
+    this.musicVolume = 0.55;
+    this.musicBus = null;
+    this.musicDuck = null;
+    this.reverb = null;
+    this.music = null;
+    this._musicTimer = null;
   }
 
   init() {
@@ -41,6 +56,16 @@ export class AudioEngine {
     for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
     this.noiseBuf = buf;
 
+    this.musicBus = this.ctx.createGain();
+    this.musicBus.gain.value = this.musicVolume;
+    this.musicDuck = this.ctx.createGain();
+    this.musicDuck.gain.value = 1;
+    this.musicBus.connect(this.musicDuck);
+    this.musicDuck.connect(this.master);
+
+    this._makeReverb();
+    this._startMusic();
+
     this._startAmbient();
   }
 
@@ -56,6 +81,29 @@ export class AudioEngine {
     if (this.master && this.ctx && !this.muted) {
       this.master.gain.setTargetAtTime(this.volume, this.ctx.currentTime, 0.03);
     }
+  }
+
+  setMusicVolume(volume) {
+    this.musicVolume = Math.max(0, Math.min(1, volume));
+    if (this.musicBus && this.ctx) {
+      this.musicBus.gain.setTargetAtTime(this.musicVolume, this.ctx.currentTime, 0.05);
+    }
+  }
+
+  setMusicIntensity(value) {
+    if (!this.music) return;
+    this.music.intensity = Math.max(0, Math.min(1, value));
+    this.music.tempo = 88 + this.music.intensity * 16;
+  }
+
+  duck() {
+    if (!this.ctx || !this.musicDuck) return;
+    const t = this.ctx.currentTime;
+    const g = this.musicDuck.gain;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(g.value, t);
+    g.linearRampToValueAtTime(0.4, t + 0.02);
+    g.linearRampToValueAtTime(1, t + 0.3);
   }
 
   _pan(pan) {
@@ -136,11 +184,13 @@ export class AudioEngine {
   }
 
   damage(pan = 0) {
+    this.duck();
     this.thunk(pan, 1.7);
     this._tone(90, { type: 'sine', dur: 0.35, gain: 0.22, pan, glide: 45 });
   }
 
   explode(scale = 1, pan = 0) {
+    this.duck();
     const k = Math.sqrt(scale);
     this._tone(75 / k, { type: 'sine', dur: 0.8 * scale, gain: 0.58, pan, glide: 26, attack: 0.008 });
     this._tone(135 / k, { type: 'triangle', dur: 0.5 * scale, gain: 0.2, pan, glide: 45 });
@@ -186,6 +236,154 @@ export class AudioEngine {
       lfo.stop(t0 + 0.2);
       this.overheatNode = null;
     }
+  }
+
+  _makeReverb() {
+    const rate = this.ctx.sampleRate;
+    const len = Math.floor(rate * 1.8);
+    const buf = this.ctx.createBuffer(2, len, rate);
+    for (let ch = 0; ch < 2; ch++) {
+      const d = buf.getChannelData(ch);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.2);
+    }
+    const conv = this.ctx.createConvolver();
+    conv.buffer = buf;
+    const wet = this.ctx.createGain();
+    wet.gain.value = 0.5;
+    conv.connect(wet);
+    wet.connect(this.musicBus);
+    this.reverb = conv;
+  }
+
+  _startMusic() {
+    if (this.music) return;
+    this.music = { tempo: 92, intensity: 0.2, step: 0, nextTime: this.ctx.currentTime + 0.2 };
+    this._musicTimer = setInterval(() => this._scheduleMusic(), 25);
+  }
+
+  _scheduleMusic() {
+    if (!this.music || !this.ctx) return;
+    while (this.music.nextTime < this.ctx.currentTime + 0.12) {
+      this._playStep(this.music.step, this.music.nextTime);
+      const sixteenth = (60 / this.music.tempo) / 4;
+      this.music.nextTime += sixteenth;
+      this.music.step = (this.music.step + 1) % 64;
+    }
+  }
+
+  _playStep(step, time) {
+    const bar = Math.floor(step / 16) % 4;
+    const beat = step % 16;
+    const intensity = this.music.intensity;
+    const chord = CHORDS[bar];
+    const root = ROOTS[bar];
+    const beatDur = 60 / this.music.tempo;
+
+    if (beat === 0) {
+      for (const n of chord) this._pad(n, time, beatDur * 4 * 0.98);
+      this._bass(root - 12, time, beatDur * 2);
+    }
+    if (beat === 8) this._bass(root - 12, time, beatDur * 2);
+
+    if (beat % 2 === 0) {
+      const idx = Math.floor(step / 2) % chord.length;
+      const oct = (Math.floor(step / 8) % 2) ? 24 : 12;
+      this._bell(chord[idx] + oct, time, 0.55 + intensity * 0.45);
+    }
+
+    if (intensity > 0.3 && beat % 2 === 1) {
+      this._hat(time, 0.08 + intensity * 0.15);
+    }
+
+    if (intensity > 0.6 && beat === 12 && bar % 2 === 0) {
+      this._bell(chord[2] + 24, time, 0.3);
+    }
+  }
+
+  _send(node) {
+    node.connect(this.musicBus);
+    if (this.reverb) node.connect(this.reverb);
+  }
+
+  _pad(midi, time, dur) {
+    const freq = midiToFreq(midi);
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.0001, time);
+    g.gain.linearRampToValueAtTime(0.045, time + 0.6);
+    g.gain.setValueAtTime(0.045, time + dur - 0.5);
+    g.gain.linearRampToValueAtTime(0.0001, time + dur);
+
+    const lp = this.ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 900;
+    lp.Q.value = 0.6;
+
+    for (const [type, cents] of [['triangle', -5], ['sine', 5]]) {
+      const osc = this.ctx.createOscillator();
+      osc.type = type;
+      osc.frequency.value = freq;
+      osc.detune.value = cents;
+      osc.connect(lp);
+      osc.start(time);
+      osc.stop(time + dur + 0.1);
+    }
+    lp.connect(g);
+    this._send(g);
+  }
+
+  _bell(midi, time, vel) {
+    const freq = midiToFreq(midi);
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.0001, time);
+    g.gain.exponentialRampToValueAtTime(0.035 * vel, time + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + 0.5);
+
+    const osc = this.ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+
+    const p = this.ctx.createStereoPanner ? this.ctx.createStereoPanner() : this.ctx.createGain();
+    if (p.pan) p.pan.value = (Math.random() * 2 - 1) * 0.5;
+
+    osc.connect(g);
+    g.connect(p);
+    this._send(p);
+
+    osc.start(time);
+    osc.stop(time + 0.55);
+  }
+
+  _bass(midi, time, dur) {
+    const osc = this.ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = midiToFreq(midi);
+
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.0001, time);
+    g.gain.linearRampToValueAtTime(0.09, time + 0.02);
+    g.gain.setValueAtTime(0.09, time + dur - 0.15);
+    g.gain.linearRampToValueAtTime(0.0001, time + dur);
+
+    const lp = this.ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 260;
+
+    osc.connect(lp); lp.connect(g); g.connect(this.musicBus);
+    osc.start(time); osc.stop(time + dur + 0.05);
+  }
+
+  _hat(time, vel) {
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.noiseBuf;
+    const hp = this.ctx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 7000;
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.0001, time);
+    g.gain.exponentialRampToValueAtTime(0.03 * vel, time + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
+    src.connect(hp); hp.connect(g); g.connect(this.musicBus);
+    src.start(time); src.stop(time + 0.06);
   }
 
   _startAmbient() {

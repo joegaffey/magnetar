@@ -19,6 +19,8 @@ const wheelRangeVal = document.getElementById('wheelRangeVal');
 const muteToggle = document.getElementById('muteToggle');
 const volumeInput = document.getElementById('volume');
 const volumeVal = document.getElementById('volumeVal');
+const musicInput = document.getElementById('music');
+const musicVal = document.getElementById('musicVal');
 
 let W = 0, H = 0, CX = 0, CY = 0, DPR = 1;
 
@@ -140,6 +142,7 @@ function reset() {
   input.angle = 0;
   audio.init();
   audio.overheat(false);
+  audio.setMusicIntensity(0.2);
   wasOverheated = false;
   overlay.classList.add('hidden');
   syncHud();
@@ -161,6 +164,7 @@ function gameOver() {
   over = true; running = false;
   input.stopFfb();
   audio.gameOver();
+  audio.setMusicIntensity(0.12);
   audio.setTransfer(0);
   audio.setMass(1);
   overlay.querySelector('h2').textContent = 'Core breached';
@@ -487,10 +491,12 @@ function updateAudio(dt) {
   if (!running) {
     audio.setTransfer(0);
     audio.setMass(1);
+    audio.setMusicIntensity(0.15);
     if (wasOverheated) { audio.overheat(false); wasOverheated = false; }
     return;
   }
   audio.setMass(inertia());
+  audio.setMusicIntensity(clamp(difficulty / 60 + (1 - health / 100) * 0.35, 0, 1));
   let near = 0;
   const ps = poles();
   for (const o of orbs) {
@@ -764,6 +770,18 @@ volumeInput.addEventListener('input', () => {
   audio.setVolume(v);
   volumeVal.textContent = volumeInput.value;
   localStorage.setItem('magnetar-volume', String(v));
+});
+
+const storedMusic = parseFloat(localStorage.getItem('magnetar-music'));
+const initialMusic = Number.isNaN(storedMusic) ? 0.55 : storedMusic;
+audio.setMusicVolume(initialMusic);
+musicInput.value = Math.round(initialMusic * 100);
+musicVal.textContent = Math.round(initialMusic * 100);
+musicInput.addEventListener('input', () => {
+  const v = parseInt(musicInput.value) / 100;
+  audio.setMusicVolume(v);
+  musicVal.textContent = musicInput.value;
+  localStorage.setItem('magnetar-music', String(v));
 });
 
 document.addEventListener('visibilitychange', () => {

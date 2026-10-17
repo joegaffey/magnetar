@@ -158,7 +158,8 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 - **Impacts:** low **thunks** (sine body + filtered noise) for pole collisions and core hits, scaled by impact speed. **Explosions are deep sub-bass** booms + low-passed noise.
 - **Ambient:** dark detuned drone; **mass hum** whose pitch/gain tracks inertia; soft overheat wobble.
 - **Stereo panning** by orb X relative to the core; drone/hum centred.
-- **Mute + volume** in the generic **Settings** panel, persisted; AudioContext resumed on Start, suspended when the tab is hidden.
+- **Adaptive generative score:** an original 4-chord loop (I–V–vi–IV, D major) with warm detuned pads, a shimmering sine arpeggio, soft bass, and hats/shimmer that fade in with intensity; tempo scales with difficulty. Sidechain-style ducking under impacts. Inspired by warm, euphoric synth-pop, not a transcription.
+- **Master, Music volume and Mute** in the generic **Settings** panel, persisted; AudioContext resumed on Start, suspended when the tab is hidden.
 - Optional later: a small music loop layered on top.
 
 ## 8. Parameters (current)
