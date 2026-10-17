@@ -639,7 +639,7 @@ function render() {
   ctx.fillRect(0, 0, W, H);
 
   // faint grid
-  ctx.strokeStyle = 'rgba(40, 60, 100, 0.18)';
+  ctx.strokeStyle = 'rgba(56, 120, 210, 0.22)';
   ctx.lineWidth = 1;
   const grid = 48;
   const ox = (CX % grid), oy = (CY % grid);
