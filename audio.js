@@ -123,10 +123,6 @@ export class AudioEngine {
     this.whoosh(pan, 1, 0.15, 0.24);
   }
 
-  shed(pan = 0) {
-    this.whoosh(pan, -1, 0.1, 0.28);
-  }
-
   burst(pan = 0) {
     this.whoosh(pan, 1, 0.24, 0.38);
     this.thunk(pan, 0.8);

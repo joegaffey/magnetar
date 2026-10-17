@@ -310,7 +310,6 @@ function shedOne(index, quiet) {
   stuck.splice(index, 1);
   if (!quiet) {
     spawnParticles(wx, wy, ORB_COLORS[o.pol], 10, 260);
-    audio.shed(panOf(wx));
   }
 }
 
