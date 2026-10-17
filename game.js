@@ -11,7 +11,6 @@ const massEl = document.getElementById('mass');
 const scoreEl = document.getElementById('score');
 const ffbEl = document.getElementById('ffb');
 const wheelSettingsBtn = document.getElementById('wheelSettingsBtn');
-const wheelPanel = document.getElementById('wheelPanel');
 const ffbStrengthInput = document.getElementById('ffbStrength');
 const ffbStrengthVal = document.getElementById('ffbStrengthVal');
 const wheelRangeInput = document.getElementById('wheelRange');
@@ -21,7 +20,8 @@ const volumeInput = document.getElementById('volume');
 const volumeVal = document.getElementById('volumeVal');
 const musicInput = document.getElementById('music');
 const musicVal = document.getElementById('musicVal');
-const audioStateEl = document.getElementById('audioState');
+const settingsModal = document.getElementById('settingsModal');
+const settingsClose = document.getElementById('settingsClose');
 
 let W = 0, H = 0, CX = 0, CY = 0, DPR = 1;
 
@@ -90,7 +90,7 @@ let particles = [];
 let health = 100, score = 0, caught = 0, exploded = 0;
 let streak = 0;
 let difficulty = 0, spawnTimer = 1.0, spawnEvery = 1.6;
-let running = false, over = false;
+let running = false, over = false, paused = false;
 let overheatTime = 0, shedCooldown = 0;
 let jolt = 0, joltDir = 0, joltForce = 0;
 let wasOverheated = false, audioAccum = 0;
@@ -143,7 +143,6 @@ function reset() {
   running = true; over = false; overheatTime = 0; shedCooldown = 0; jolt = 0; joltForce = 0;
   input.angle = 0;
   audio.init();
-  syncAudioState();
   audio.overheat(false);
   audio.setMusicIntensity(0.2);
   wasOverheated = false;
@@ -488,6 +487,7 @@ requestAnimationFrame(frame);
   let dt = (now - last) / 1000;
   last = now;
   if (dt > 0.1) dt = 0.1;
+  if (paused) { render(); return; }
   acc += dt;
   while (acc >= STEP) { step(STEP); acc -= STEP; }
   updateAudio(dt);
@@ -752,7 +752,41 @@ document.getElementById('connectButton').addEventListener('click', async () => {
   syncHud();
 });
 
-wheelSettingsBtn.addEventListener('click', () => wheelPanel.classList.toggle('hidden'));
+function pauseGame() {
+  if (paused) return;
+  paused = true;
+  acc = 0;
+  input.stopFfb();
+  audio.setTransfer(0);
+}
+
+function resumeGame() {
+  if (!paused) return;
+  paused = false;
+  last = performance.now();
+}
+
+function openSettings() {
+  settingsModal.classList.remove('hidden');
+  pauseGame();
+}
+
+function closeSettings() {
+  settingsModal.classList.add('hidden');
+  resumeGame();
+}
+
+wheelSettingsBtn.addEventListener('click', () => {
+  if (settingsModal.classList.contains('hidden')) openSettings();
+  else closeSettings();
+});
+settingsClose.addEventListener('click', closeSettings);
+settingsModal.addEventListener('click', (e) => {
+  if (!e.target.closest('.wheel-panel')) closeSettings();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !settingsModal.classList.contains('hidden')) closeSettings();
+});
 ffbStrengthInput.addEventListener('input', () => {
   ffbStrengthVal.textContent = ffbStrengthInput.value + '%';
   input.setFfbStrength(parseInt(ffbStrengthInput.value) / 100);
@@ -794,24 +828,16 @@ musicInput.addEventListener('input', () => {
   localStorage.setItem('magnetar-music', String(v));
 });
 
-function syncAudioState() {
-  const state = audio.ctx ? audio.ctx.state : 'off';
-  audioStateEl.textContent = 'Audio: ' + state + (audio.muted ? ' \u00b7 muted' : '');
-  audioStateEl.style.color = state === 'running' && !audio.muted ? 'var(--lime)' : 'var(--orange)';
-}
-
 document.addEventListener('visibilitychange', () => {
   if (!audio.ctx) return;
   if (document.hidden) audio.ctx.suspend();
   else audio.unlock();
-  syncAudioState();
 });
 
-const unlockAudio = () => { audio.init(); syncAudioState(); };
+const unlockAudio = () => audio.init();
 for (const ev of ['pointerdown', 'touchstart', 'touchend', 'pointerup', 'keydown']) {
   window.addEventListener(ev, unlockAudio, { passive: true });
 }
-setInterval(syncAudioState, 1000);
 
 document.getElementById('restartButton').addEventListener('click', () => reset());
 overlay.querySelector('button').addEventListener('click', () => reset());
