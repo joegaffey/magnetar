@@ -275,7 +275,7 @@ function step(dt) {
     const ds = Math.min(o.size, (ORB_SIZE / ABSORB_TIME) * dt);
     o.size -= ds;
     health = Math.min(100, health + (HEAL_PER_ORB / ORB_SIZE) * ds);
-    if (Math.random() < ds * 3) spawnInwardAt(o);
+    if (Math.random() < ds * 3) spawnStuckEnergy(o);
     if (o.size <= 0.3) stuck.splice(i, 1);
   }
 
@@ -318,6 +318,9 @@ function step(dt) {
             const f = PULL * (1 - d / ATTRACT_R);
             o.vx -= ux * f * dt;
             o.vy -= uy * f * dt;
+          }
+          if (d < POLE_R * 3 && Math.random() < dt * 16) {
+            spawnEnergyToPole(o.x, o.y, p, o.pol);
           }
         } else if (d < REPEL_RANGE) {
           const f = PULL * REPEL * (1 - d / REPEL_RANGE);
@@ -430,6 +433,7 @@ let streams = [];
 let streamTimer = 0;
 
 function spawnStream() {
+  const extra = Math.min(2, Math.floor(stuck.length / 4));
   for (let s = 0; s < 2; s++) {
     const pole = poleWorld(s === 0 ? 1 : -1);
     const dx = pole.x - CX, dy = pole.y - CY;
@@ -437,7 +441,7 @@ function spawnStream() {
     const ux = dx / len, uy = dy / len;
     const px = -uy, py = ux;
     const color = ORB_COLORS[s];
-    for (let k = 0; k < 2; k++) {
+    for (let k = 0; k < 2 + extra; k++) {
       const f = 0.15 + Math.random() * 0.8;
       const jitter = (Math.random() - 0.5) * 4;
       const drift = 40 + Math.random() * 50;
@@ -447,29 +451,37 @@ function spawnStream() {
         y: CY + uy * len * f + py * jitter,
         vx: -ux * drift + px * (Math.random() - 0.5) * 6,
         vy: -uy * drift + py * (Math.random() - 0.5) * 6,
-        ux, uy, len,
+        tx: CX, ty: CY,
         life, max: life, color, size: 0.8 + Math.random() * 0.8
       });
     }
   }
 }
 
-function spawnInwardAt(o) {
+function nearestPole(x, y) {
+  const p1 = poleWorld(1), p2 = poleWorld(-1);
+  return Math.hypot(x - p1.x, y - p1.y) <= Math.hypot(x - p2.x, y - p2.y) ? p1 : p2;
+}
+
+function spawnEnergyToPole(x, y, pole, pol) {
+  const dx = pole.x - x, dy = pole.y - y;
+  const len = Math.hypot(dx, dy) || 1;
+  const ux = dx / len, uy = dy / len;
+  const life = 0.25 + Math.random() * 0.25;
+  streams.push({
+    x, y,
+    vx: ux * (120 + Math.random() * 80),
+    vy: uy * (120 + Math.random() * 80),
+    tx: pole.x, ty: pole.y,
+    life, max: life, color: ORB_COLORS[pol], size: 1 + Math.random() * 0.8
+  });
+}
+
+function spawnStuckEnergy(o) {
   const c = Math.cos(magnet.phi), s = Math.sin(magnet.phi);
   const wx = CX + o.lx * c - o.ly * s;
   const wy = CY + o.lx * s + o.ly * c;
-  const dx = CX - wx, dy = CY - wy;
-  const len = Math.hypot(dx, dy) || 1;
-  const ux = dx / len, uy = dy / len;
-  const color = ORB_COLORS[o.pol];
-  const life = 0.4 + Math.random() * 0.3;
-  streams.push({
-    x: wx, y: wy,
-    vx: ux * (60 + Math.random() * 40),
-    vy: uy * (60 + Math.random() * 40),
-    ux, uy, len,
-    life, max: life, color, size: 1 + Math.random() * 0.8
-  });
+  spawnEnergyToPole(wx, wy, nearestPole(wx, wy), o.pol);
 }
 
 function updateStreams(dt) {
@@ -479,8 +491,8 @@ function updateStreams(dt) {
     const p = streams[i];
     p.x += p.vx * dt; p.y += p.vy * dt;
     p.life -= dt;
-    const dc = Math.hypot(p.x - CX, p.y - CY);
-    if (p.life <= 0 || dc < 14 || dc > p.len + 10) streams.splice(i, 1);
+    const dc = Math.hypot(p.x - p.tx, p.y - p.ty);
+    if (p.life <= 0 || dc < 12) streams.splice(i, 1);
   }
 }
 

@@ -88,9 +88,10 @@ Secondary: **hard capacity** — if `stuck ≥ MAX_STUCK`, the oldest orb is eje
 - Rotation therefore matters: present the correct pole to each orb; the wrong pole shoves it away.
 
 ### 5.9 Core regeneration / absorption (in build)
-- A caught orb sticks at full size, then **slowly shrinks** over `ABSORB_TIME`, feeding particles into the centre.
+- A caught orb sticks at full size, then **slowly shrinks** over `ABSORB_TIME`, feeding particles into its pole.
+- **Energy routing:** orb → pole → centre. Orbs (free or stuck) siphon energy into their matching pole, and the pole forwards it to the black hole. Energy never travels directly orb → centre.
 - Absorption heals the core gradually (up to `HEAL_PER_ORB` per orb, capped 100) and **removes the orb's mass** once fully absorbed.
-- More absorbing orbs = denser energy flow into the black hole (and a safer but lighter magnet).
+- More absorbing orbs = denser pole→centre flow (and a safer but lighter magnet).
 
 ### 5.10 Overload / overheat (experimental, in build)
 - Above `OVERLOAD_MASS` the magnet overheats: **attraction is disabled** and the HUD shows a warning (`Mass 3.xx !` + “OVERHEAT”).
@@ -137,7 +138,7 @@ Secondary: **hard capacity** — if `stuck ≥ MAX_STUCK`, the oldest orb is eje
 ### Shapes & effects
 - **Glow:** pre-rendered radial "bloom" sprites drawn additively behind orbs, poles and the core (cheap neon).
 - **Black hole:** dark event horizon at the centre with a glowing accretion/health ring (no extra rings/lines).
-- **Bridges:** glowing particles flow **inward** from each pole to the event horizon (no solid bar or drawn lines); absorbing orbs add to the flow.
+- **Bridges:** glowing particles flow **inward** from each pole to the event horizon (no solid bar or drawn lines). Orbs feed energy **into their pole**, which then forwards it to the centre — never orb → centre directly.
 - **Orbs:** glowing circles; volatile orbs get a red ring.
 - **Stuck orbs:** clustered on the pole with a glow; gentle pulse.
 - **Catch:** particle burst at the contact point (reads as a real hit).
