@@ -396,16 +396,16 @@ function spawnStream() {
     const color = ORB_COLORS[s];
     for (let k = 0; k < 2; k++) {
       const f = Math.random() * 0.9;
-      const jitter = (Math.random() - 0.5) * 14;
-      const drift = 8 + Math.random() * 26;
-      const life = 0.4 + Math.random() * 0.45;
+      const jitter = (Math.random() - 0.5) * 4;
+      const drift = 14 + Math.random() * 20;
+      const life = 0.4 + Math.random() * 0.4;
       streams.push({
         x: CX + ux * len * f + px * jitter,
         y: CY + uy * len * f + py * jitter,
-        vx: ux * drift + px * (Math.random() - 0.5) * 24,
-        vy: uy * drift + py * (Math.random() - 0.5) * 24,
+        vx: ux * drift + px * (Math.random() - 0.5) * 6,
+        vy: uy * drift + py * (Math.random() - 0.5) * 6,
         ux, uy, len,
-        life, max: life, color, size: 0.8 + Math.random() * 1.2
+        life, max: life, color, size: 0.8 + Math.random() * 0.8
       });
     }
   }
