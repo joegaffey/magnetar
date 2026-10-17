@@ -382,6 +382,75 @@ function updateFfb(dt) {
 
 const ORB_COLORS = ['#e0a04a', '#7aa7ff'];
 
+function traceWisp(pts) {
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.stroke();
+}
+
+function drawWisp(x1, y1, x2, y2, color, phase, t, isOver) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const len = Math.hypot(dx, dy) || 1;
+  const px = -dy / len, py = dx / len;
+  const segs = 18;
+  const pts = [];
+  for (let i = 0; i <= segs; i++) {
+    const f = i / segs;
+    const wob = Math.sin(f * Math.PI * 3 - t * 6 + phase) * 14 * (1 - f);
+    pts.push([x1 + dx * f + px * wob, y1 + dy * f + py * wob]);
+  }
+  const paint = isOver ? '#ff8a5a' : color;
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineCap = 'round';
+  ctx.shadowBlur = 20;
+  ctx.shadowColor = paint;
+  const g = ctx.createLinearGradient(x1, y1, x2, y2);
+  g.addColorStop(0, 'rgba(220, 235, 255, 0.9)');
+  g.addColorStop(1, paint);
+  ctx.strokeStyle = g;
+
+  ctx.globalAlpha = 0.3;
+  ctx.lineWidth = 9;
+  traceWisp(pts);
+  ctx.globalAlpha = 1;
+  ctx.lineWidth = 2.5;
+  traceWisp(pts);
+
+  ctx.fillStyle = paint;
+  ctx.globalAlpha = 0.5;
+  for (let i = 2; i < pts.length - 1; i += 3) {
+    ctx.beginPath(); ctx.arc(pts[i][0], pts[i][1], 1.6, 0, TAU); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+function drawBlackHole(t, color) {
+  const hp = clamp(health / 100, 0, 1);
+  drawGlow(CX, CY, 74, color, 0.35);
+
+  ctx.save();
+  ctx.translate(CX, CY);
+  ctx.rotate(t * 0.9);
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.strokeStyle = color;
+  ctx.shadowBlur = 18;
+  ctx.shadowColor = color;
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(0, 0, 27, 0, Math.PI * 1.15); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, 31, Math.PI, Math.PI * 1.75); ctx.stroke();
+  ctx.restore();
+
+  ctx.beginPath(); ctx.arc(CX, CY, 37, -Math.PI / 2, -Math.PI / 2 + TAU * hp);
+  ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.stroke();
+
+  ctx.beginPath(); ctx.arc(CX, CY, 22, 0, TAU);
+  ctx.fillStyle = '#000'; ctx.fill();
+}
+
 function render() {
   ctx.fillStyle = '#05060a';
   ctx.fillRect(0, 0, W, H);
@@ -415,12 +484,14 @@ function render() {
   for (const r of [74, 108, 142]) { ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.stroke(); }
   ctx.restore();
 
-  // core glow + ring
-  drawGlow(CX, CY, CORE_R * 3.2, coreColor, 0.5);
-  ctx.beginPath(); ctx.arc(CX, CY, CORE_R + 8, -Math.PI / 2, -Math.PI / 2 + TAU * hp);
-  ctx.strokeStyle = coreColor; ctx.lineWidth = 5; ctx.stroke();
-  ctx.beginPath(); ctx.arc(CX, CY, CORE_R, 0, TAU);
-  ctx.fillStyle = '#05060a'; ctx.fill();
+  const p1 = poleWorld(1), p2 = poleWorld(-1);
+
+  // energy wisps reaching out from the event horizon
+  drawWisp(CX, CY, p1.x, p1.y, ORB_COLORS[0], 0, t, isOver);
+  drawWisp(CX, CY, p2.x, p2.y, ORB_COLORS[1], Math.PI, t, isOver);
+
+  // black hole / event horizon
+  drawBlackHole(t, coreColor);
 
   // orbs (glow + core)
   for (const o of orbs) {
@@ -437,39 +508,7 @@ function render() {
     }
   }
 
-  // magnet: glowing energy bar (amber -> white -> blue)
-  const p1 = poleWorld(1), p2 = poleWorld(-1);
-  const grad = ctx.createLinearGradient(p1.x, p1.y, p2.x, p2.y);
-  grad.addColorStop(0, '#e0a04a');
-  grad.addColorStop(0.5, '#cfe0ff');
-  grad.addColorStop(1, '#7aa7ff');
-
-  ctx.save();
-  ctx.globalCompositeOperation = 'lighter';
-  ctx.strokeStyle = isOver ? '#ff8a5a' : grad;
-  ctx.lineWidth = 18 + Math.sin(t * 6) * 2;
-  ctx.lineCap = 'round';
-  ctx.shadowBlur = 28;
-  ctx.shadowColor = isOver ? '#ff5a5f' : '#88aaff';
-  ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
-  ctx.restore();
-
-  // bright inner core + travelling energy dashes
-  ctx.strokeStyle = isOver ? '#ffd0b0' : 'rgba(255, 255, 255, 0.92)';
-  ctx.lineWidth = 3.5;
-  ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
-
-  ctx.save();
-  ctx.globalCompositeOperation = 'lighter';
-  ctx.setLineDash([6, 22]);
-  ctx.lineDashOffset = -t * 160;
-  ctx.strokeStyle = 'rgba(200, 225, 255, 0.85)';
-  ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.restore();
-
-  // pulsing poles
+  // poles (glowing ends of the wisps)
   const polePulse = 1 + Math.sin(t * 5) * 0.12;
   drawGlow(p1.x, p1.y, 46 * polePulse, ORB_COLORS[0], 0.85);
   drawGlow(p2.x, p2.y, 46 * polePulse, ORB_COLORS[1], 0.85);

@@ -131,7 +131,8 @@ Secondary: **hard capacity** — if `stuck ≥ MAX_STUCK`, the oldest orb is eje
 
 ### Shapes & effects
 - **Glow:** pre-rendered radial "bloom" sprites drawn additively behind orbs, poles and the core (cheap neon).
-- **Magnet:** thick rounded bar with a glow; poles coloured by the orb colour they attract (amber / blue).
+- **Black hole:** dark event horizon at the centre with a glowing accretion/health ring and faint rotating lensing rings.
+- **Wisps:** two animated energy tendrils reach from the event horizon out to the poles; the poles glow in the orb colour they attract (amber / blue).
 - **Orbs:** glowing circles; volatile orbs get a red ring.
 - **Stuck orbs:** clustered on the pole with a glow; gentle pulse.
 - **Catch:** particle burst at the contact point (reads as a real hit).
