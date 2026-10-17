@@ -32,6 +32,7 @@ A single abstract value: **target angle** `θ` in degrees (may be unbounded for 
 | Wheel (WebHID) | `wheel.rotation` (absolute, ±maxRotation/2) | Yes | Optional; auto-selected when moved |
 | Keyboard | hold ←/→ or A/D, integrate ±rate (unbounded) | No | Best for continuous spin |
 | Mouse | pointer X → absolute angle (bounded ±range) | No | Simple aiming |
+| Touch | drag on the canvas → pointer X → absolute angle | No | Mobile/tablet |
 | Gamepad | left-stick X / wheel axis (planned) | No | Add via same interface |
 
 - Input module: `input.js` (`SteeringInput`), exposes `angle`, `source`, `ffbActive`, `update(dt)`, `applyForce(v)`, `stopFfb()`.

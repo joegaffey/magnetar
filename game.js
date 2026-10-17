@@ -395,7 +395,7 @@ let last = performance.now(), acc = 0, ffbAccum = 0;
 const STEP = 1 / 120;
 
 function frame(now) {
-  requestAnimationFrame(frame);
+requestAnimationFrame(frame);
   let dt = (now - last) / 1000;
   last = now;
   if (dt > 0.1) dt = 0.1;

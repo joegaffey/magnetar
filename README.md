@@ -6,7 +6,7 @@ Every orb that sticks adds mass — the magnet lags and becomes harder to contro
 
 ## Play
 
-- **Rotate the magnet** with `←/→` (or `A/D`), or move the mouse.
+- **Rotate the magnet** with `←/→` (or `A/D`), move the mouse, or drag on a touchscreen.
 - Present the **matching pole** (amber ↔ amber, blue ↔ blue) to catch an orb; the opposite pole repels it.
 - Let caught orbs **be absorbed** to restore the core.
 - **Avoid spinning fast** — it sheds orbs before they can be absorbed.
