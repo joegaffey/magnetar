@@ -460,6 +460,6 @@ canvas.addEventListener('mousemove', (e) => {
 });
 
 input.angle = 0;
+running = false;
 syncHud();
-reset();
 requestAnimationFrame(frame);

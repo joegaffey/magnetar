@@ -184,7 +184,7 @@ Tuning goals: ~30–45 s to first "heavy" feel; shedding should be attainable in
 ## 9. UX / onboarding
 
 - **Full-viewport canvas**; HUD and controls overlay on top (no letterboxing).
-- **Auto-start** — no start gate/help overlay; a compact controls hint sits bottom-right and the orb legend bottom-left.
+- **Start gate:** a help overlay with controls and a **Start** button; clicking Start dismisses it and begins play (no auto-start). On failure the same overlay shows results + **Restart**.
 - HUD (top-left): `Health`, `Mass`, `Score`, `Input` (source + FFB), `FFB`; brand wordmark.
 - Top-right: **Connect wheel** (optional) + **Restart** + status.
 - Game over overlay: score + caught/shed/volatile counts, **Restart**.
