@@ -99,7 +99,7 @@ Secondary: **hard capacity** — if `stuck ≥ MAX_STUCK`, the oldest orb is eje
 - Shedding (spinning) back below the threshold cools it.
 
 ### 5.11 Unstable orbs & explosions (in build)
-- Some orbs are **unstable** (red ring). They can be caught and absorbed, and heal **3×** the normal amount (`HEAL_PER_ORB × 3`) to match their 3× damage.
+- Some orbs are **unstable** (red ring). Catching one triggers an **instant burst** that transmits power immediately (heals `HEAL_PER_ORB × 3`) — it does **not** stick or absorb gradually.
 - An explosion applies a radial impulse to nearby orbs, an **angular kick to the magnet**, and damages the core if close.
 - An unstable orb reaching the **centre** detonates in a **larger explosion** (1.8× radius/force/particles) and deals **3× core damage** (24) plus the blast damage.
 - Goal: make unstable orbs high-risk / high-reward — grab them for a big heal, but never let one reach the core.

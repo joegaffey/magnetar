@@ -205,11 +205,33 @@ function explode(x, y, big = false) {
   exploded++;
 }
 
+function powerBurst(x, y, pol) {
+  health = Math.min(100, health + HEAL_PER_ORB * 3);
+  score += 1;
+  exploded++;
+  explosions.push({ x, y, life: 0.45, max: 0.45, scale: 1.2 });
+  spawnParticles(x, y, '#fff2d0', 14, 520, 0.8);
+  spawnParticles(x, y, ORB_COLORS[pol], 18, 460, 1.1);
+  spawnParticles(x, y, '#57d38c', 12, 360, 1);
+  const R = EXPLOSION_R * 1.2;
+  for (const o of orbs) {
+    const dx = o.x - x, dy = o.y - y;
+    const d = Math.hypot(dx, dy);
+    if (d < R && d > 0.001) {
+      const f = EXPLOSION_FORCE * (1 - d / R);
+      o.vx += (dx / d) * f;
+      o.vy += (dy / d) * f;
+    }
+  }
+  magnet.omega += (x >= CX ? 1 : -1) * EXPLOSION_TORQUE;
+}
+
 function catchOrb(orb) {
+  if (orb.volatile) { powerBurst(orb.x, orb.y, orb.pol); return; }
   if (stuck.length >= MAX_STUCK) shedOne(0, true);
   const dx = orb.x - CX, dy = orb.y - CY;
   const c = Math.cos(-magnet.phi), s = Math.sin(-magnet.phi);
-  stuck.push({ lx: dx * c - dy * s, ly: dx * s + dy * c, mass: ORB_MASS, pol: orb.pol, size: ORB_SIZE, volatile: orb.volatile });
+  stuck.push({ lx: dx * c - dy * s, ly: dx * s + dy * c, mass: ORB_MASS, pol: orb.pol, size: ORB_SIZE });
   caught++;
   score += 1;
   spawnParticles(orb.x, orb.y, ORB_COLORS[orb.pol], 12, 220);
@@ -273,8 +295,7 @@ function step(dt) {
     const o = stuck[i];
     const ds = Math.min(o.size, (ORB_SIZE / ABSORB_TIME) * dt);
     o.size -= ds;
-    const healMult = o.volatile ? 3 : 1;
-    health = Math.min(100, health + (HEAL_PER_ORB * healMult / ORB_SIZE) * ds);
+    health = Math.min(100, health + (HEAL_PER_ORB / ORB_SIZE) * ds);
     if (Math.random() < ds * 3) spawnStuckEnergy(o);
     if (o.size <= 0.3) stuck.splice(i, 1);
   }
@@ -586,13 +607,9 @@ function render() {
     const wx = CX + o.lx * c - o.ly * s;
     const wy = CY + o.lx * s + o.ly * c;
     const sz = o.size !== undefined ? o.size : ORB_SIZE;
-    drawGlow(wx, wy, sz * 2.7, o.volatile ? '#ff5a5f' : ORB_COLORS[o.pol], 0.6);
+    drawGlow(wx, wy, sz * 2.7, ORB_COLORS[o.pol], 0.6);
     ctx.beginPath(); ctx.arc(wx, wy, sz, 0, TAU);
     ctx.fillStyle = ORB_COLORS[o.pol]; ctx.fill();
-    if (o.volatile) {
-      ctx.beginPath(); ctx.arc(wx, wy, sz + 4, 0, TAU);
-      ctx.strokeStyle = '#ff5a5f'; ctx.lineWidth = 2; ctx.stroke();
-    }
   }
 
   // explosions: hot flash + additive shock rings
