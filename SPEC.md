@@ -163,8 +163,8 @@ Low hum whose pitch/volume tracks `Mass`; metallic ping on catch; whoosh on shed
 | `POLE_BODY_R` | 10 | physical pole-orb radius (orbs bounce off) |
 | `BOUNCE` | 0.75 | restitution when an orb hits a pole |
 | `ATTRACT_R` | 150 | attraction range |
-| `PULL` | 480 | attraction accel at the pole |
-| `REPEL` | 0.5 | opposite-pole push (fraction of pull) |
+| `PULL` | 550 | attraction accel at the pole |
+| `REPEL` | 0.6 | opposite-pole push (fraction of pull) |
 | `REPEL_RANGE` | 1.2× `ATTRACT_R` | wrong pole acts from slightly further away |
 | `K_TORQUE` / `D_TORQUE` | 170 / 17 | magnet spring / damping |
 | `BASE_I` | 1.0 | base inertia |
@@ -173,7 +173,7 @@ Low hum whose pitch/volume tracks `Mass`; metallic ping on catch; whoosh on shed
 | `SHED_ACCEL` | 5200 | centrifugal detach threshold (`ω²·r`) |
 | `SHED_INTERVAL` | 0.12 s | min time between shed orbs |
 | `CORE_R` | 20 | core radius |
-| `CORE_PULL` | 240 | core gravity-well acceleration on all free orbs |
+| `CORE_PULL` | 275 | core gravity-well acceleration on all free orbs |
 | `ORB_DRAG` | 1.1 /s | linear drag on free orbs (≈218 px/s terminal) |
 | `MAX_ORB_SPEED` | 340 px/s | free-orb speed cap |
 | Health / hit | 100 / 12 | core durability |
