@@ -1,0 +1,8 @@
+{
+  "name": "magnetar",
+  "version": "0.1.0",
+  "description": "Rotation-controlled survival game built on the webhid-wheel library: catch orbs on a rotating magnet, manage its weight, and spin to shed.",
+  "type": "module",
+  "private": true,
+  "license": "MIT"
+}

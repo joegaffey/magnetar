@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Magnetar — a rotation-controlled survival game: catch iron orbs on a rotating magnet, manage its weight, and spin to shed them before the core is breached." />
+    <title>Magnetar</title>
+    <style>
+      :root {
+        --bg: #0d0f14;
+        --panel: #161a21;
+        --border: #262c37;
+        --text: #e8ecf3;
+        --muted: #95a0b3;
+        --accent: #4f8cff;
+        --accent-2: #7aa7ff;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        background: radial-gradient(1200px 600px at 50% -10%, #16203a 0%, var(--bg) 60%) fixed;
+        color: var(--text);
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+        min-height: 100vh;
+        display: flex; flex-direction: column; align-items: center;
+        padding: 24px 16px 40px;
+      }
+      h1 { margin: 0 0 4px; font-size: 1.5rem; }
+      p.sub { margin: 0 0 16px; color: var(--muted); font-size: .9rem; text-align: center; max-width: 720px; }
+      .bar { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; justify-content: center; margin-bottom: 12px; }
+      button {
+        appearance: none; border: 0; cursor: pointer;
+        background: linear-gradient(180deg, var(--accent-2), var(--accent));
+        color: #08111f; font-weight: 700; font-size: .9rem;
+        padding: 10px 22px; border-radius: 999px;
+        box-shadow: 0 8px 22px rgba(79, 140, 255, .35);
+      }
+      button.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); box-shadow: none; font-weight: 600; }
+      button.ghost:hover { border-color: var(--accent); color: var(--accent-2); }
+      #status { color: var(--muted); font-size: .88rem; }
+      .hud { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; font-variant-numeric: tabular-nums; margin-bottom: 10px; color: var(--muted); font-size: .92rem; }
+      .hud b { color: var(--text); }
+      .wrap { position: relative; }
+      canvas { display: block; background: #0b0d12; border: 1px solid var(--border); border-radius: 14px; max-width: 100%; height: auto; cursor: crosshair; }
+      #overlay {
+        position: absolute; inset: 0; display: flex; flex-direction: column; gap: 12px;
+        align-items: center; justify-content: center; text-align: center;
+        background: rgba(11, 13, 18, .74); border-radius: 14px; backdrop-filter: blur(2px);
+        padding: 24px;
+      }
+      #overlay h2 { margin: 0; font-size: 1.4rem; }
+      #overlay p { margin: 0; color: var(--muted); max-width: 460px; }
+      .hidden { display: none !important; }
+      footer { margin-top: 22px; color: var(--muted); font-size: .8rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Magnetar</h1>
+    <p class="sub">Catch iron orbs on the rotating magnet to protect the core, but each orb adds weight and makes the magnet sluggish. Spin fast to shed them. Survive the escalation.</p>
+
+    <div class="bar">
+      <button id="connectButton">Connect wheel</button>
+      <button id="restartButton" class="ghost">Restart</button>
+      <span id="status">Keys / mouse ready · wheel optional</span>
+    </div>
+
+    <div class="hud">
+      <span>Health <b id="health">100</b></span>
+      <span>Mass <b id="mass">1.00</b></span>
+      <span>Score <b id="score">0</b></span>
+      <span>Input <b id="source">keys</b></span>
+      <span>FFB <b id="ffb">—</b></span>
+    </div>
+
+    <div class="wrap">
+      <canvas id="game" width="960" height="600"></canvas>
+      <div id="overlay">
+        <h2>Magnetar</h2>
+        <p>Turn the wheel, hold <b>&larr;</b>/<b>&rarr;</b> (or A/D), or move the mouse to rotate the magnet. Catch orbs on the poles; spin to shed the weight. Don't let them reach the core.</p>
+        <button>Start</button>
+      </div>
+    </div>
+
+    <footer>Wheel FFB resists rotation in proportion to the magnet's mass.</footer>
+
+    <script type="module" src="game.js"></script>
+  </body>
+</html>
