@@ -154,8 +154,8 @@ Low hum whose pitch/volume tracks `Mass`; metallic ping on catch; whoosh on shed
 | `POLE_R` | 22 | surface-contact catch radius (orbs visibly touch) |
 | `ATTRACT_R` | 150 | attraction range |
 | `PULL` | 760 | attraction accel at the pole |
-| `REPEL` | 0.8 | opposite-pole push (fraction of pull) |
-| `REPEL_RANGE` | 1.4× `ATTRACT_R` | wrong pole acts from further away |
+| `REPEL` | 1.3 | opposite-pole push (stronger than pull) |
+| `REPEL_RANGE` | 1.6× `ATTRACT_R` | wrong pole acts from further away |
 | `K_TORQUE` / `D_TORQUE` | 170 / 17 | magnet spring / damping |
 | `BASE_I` | 1.0 | base inertia |
 | `ORB_MASS` | 0.11 | inertia added per stuck orb |
@@ -164,7 +164,7 @@ Low hum whose pitch/volume tracks `Mass`; metallic ping on catch; whoosh on shed
 | `SHED_INTERVAL` | 0.12 s | min time between shed orbs |
 | `CORE_R` | 20 | core radius |
 | `CORE_PULL` | 110 | core gravity-well acceleration on free orbs |
-| `MAX_ORB_SPEED` | 220 px/s | free-orb speed cap |
+| `MAX_ORB_SPEED` | 320 px/s | free-orb speed cap |
 | Health / hit | 100 / 12 | core durability |
 | Spawn | 1.6 → 0.45 s | interval over time |
 | Orb speed | 55 → 205 px/s | over time |

@@ -32,8 +32,8 @@ const BAR_HALF = 85;
 const POLE_R = 22;             // surface-contact catch radius
 const ATTRACT_R = 150;
 const PULL = 760;
-const REPEL = 0.8;             // opposite pole push
-const REPEL_RANGE = ATTRACT_R * 1.4; // wrong pole acts from further away
+const REPEL = 1.3;             // opposite pole push (stronger than pull)
+const REPEL_RANGE = ATTRACT_R * 1.6;
 const K_TORQUE = 170;
 const D_TORQUE = 17;
 const BASE_I = 1.0;
@@ -43,7 +43,7 @@ const SHED_ACCEL = 5200;       // w^2 * r threshold for centrifugal shed
 const SHED_INTERVAL = 0.12;    // seconds between shed orbs
 const CORE_R = 20;
 const CORE_PULL = 110;         // acceleration of free orbs toward the core
-const MAX_ORB_SPEED = 220;
+const MAX_ORB_SPEED = 320;
 const FFB_DEADZONE = 0.05;
 
 // polarity / absorption
