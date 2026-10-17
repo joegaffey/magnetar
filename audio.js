@@ -18,7 +18,6 @@ export class AudioEngine {
     this.master = null;
     this.noiseBuf = null;
     this.ambient = null;
-    this.overheatNode = null;
     this.muted = false;
     this.volume = 0.85;
     this.musicVolume = 0.55;
@@ -234,44 +233,9 @@ export class AudioEngine {
   }
 
   gameOver() {
-    this.overheat(false);
     this._tone(110, { type: 'sine', dur: 1.1, gain: 0.3, glide: 38 });
     this._tone(55, { type: 'triangle', dur: 1.3, gain: 0.21, glide: 28 });
     this._noise({ dur: 1.0, gain: 0.14, freq: 300, type: 'lowpass', sweepTo: 60 });
-  }
-
-  overheat(on) {
-    if (!this.ctx) return;
-    if (on && !this.overheatNode) {
-      const t0 = this.ctx.currentTime;
-      const osc = this.ctx.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.value = 72;
-
-      const lfo = this.ctx.createOscillator();
-      lfo.frequency.value = 4;
-      const lfoGain = this.ctx.createGain();
-      lfoGain.gain.value = 10;
-      lfo.connect(lfoGain);
-      lfoGain.connect(osc.frequency);
-
-      const g = this.ctx.createGain();
-      g.gain.value = 0.0001;
-      g.gain.exponentialRampToValueAtTime(0.045, t0 + 0.25);
-
-      osc.connect(g); g.connect(this.master);
-      osc.start(); lfo.start();
-      this.overheatNode = { osc, lfo, g };
-    } else if (!on && this.overheatNode) {
-      const { osc, lfo, g } = this.overheatNode;
-      const t0 = this.ctx.currentTime;
-      g.gain.cancelScheduledValues(t0);
-      g.gain.setValueAtTime(Math.max(0.0001, g.gain.value), t0);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.15);
-      osc.stop(t0 + 0.2);
-      lfo.stop(t0 + 0.2);
-      this.overheatNode = null;
-    }
   }
 
   _makeReverb() {

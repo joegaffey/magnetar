@@ -1,5 +1,5 @@
-import { SteeringInput } from './input.js?v=20261017';
-import { AudioEngine } from './audio.js?v=20261017';
+import { SteeringInput } from './input.js?v=20261017b';
+import { AudioEngine } from './audio.js?v=20261017b';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -68,10 +68,6 @@ const ORB_SIZE = 8;            // render radius while stuck
 const ABSORB_TIME = 4.0;       // seconds for a stuck orb to be absorbed
 const HEAL_PER_ORB = 4.0;      // total health restored per absorbed orb
 
-// overload
-const OVERLOAD_MASS = 3.0;
-const OVERHEAT_VENT = 3.0;
-
 // volatile
 const VOLATILE_CHANCE = 0.18;
 const EXPLOSION_R = 95;
@@ -91,9 +87,9 @@ let health = 100, score = 0, caught = 0, exploded = 0;
 let streak = 0;
 let difficulty = 0, spawnTimer = 1.0, spawnEvery = 1.6;
 let running = false, over = false, paused = false;
-let overheatTime = 0, shedCooldown = 0;
+let shedCooldown = 0;
 let jolt = 0, joltDir = 0, joltForce = 0;
-let wasOverheated = false, audioAccum = 0;
+let audioAccum = 0;
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const TAU = Math.PI * 2;
@@ -140,12 +136,10 @@ function reset() {
   stuck = []; orbs = []; explosions = []; particles = []; streams = []; streamTimer = 0;
   health = 100; score = 0; caught = 0; exploded = 0; streak = 0;
   difficulty = 0; spawnTimer = 0.9; spawnEvery = 1.6;
-  running = true; over = false; overheatTime = 0; shedCooldown = 0; jolt = 0; joltForce = 0;
+  running = true; over = false; shedCooldown = 0; jolt = 0; joltForce = 0;
   input.angle = 0;
   audio.init();
-  audio.overheat(false);
   audio.setMusicIntensity(0.2);
-  wasOverheated = false;
   overlay.classList.add('hidden');
   syncHud();
 }
@@ -156,11 +150,10 @@ document.getElementById('restartButton').addEventListener('click', () => reset()
 function inertia() {
   return BASE_I + stuck.reduce((a, o) => a + o.mass, 0);
 }
-function overheated() { return inertia() > OVERLOAD_MASS; }
 
 function syncHud() {
   healthEl.textContent = Math.max(0, Math.round(health));
-  massEl.textContent = inertia().toFixed(2) + (overheated() ? ' !' : '');
+  massEl.textContent = inertia().toFixed(2);
   scoreEl.textContent = score;
   sourceEl.textContent = input.source + (input.ffbActive ? ' + FFB' : '');
 }
@@ -329,24 +322,10 @@ function shedOne(index, quiet) {
   }
 }
 
-function vent() {
-  for (let i = stuck.length - 1; i >= 0; i--) shedOne(i, true);
-  explode(CX, CY);
-  overheatTime = 0;
-}
-
 function step(dt) {
   input.update(dt);
   updateStreams(dt);
   if (!running) return;
-
-  const isOver = overheated();
-  if (isOver) {
-    overheatTime += dt;
-    if (overheatTime > OVERHEAT_VENT) vent();
-  } else {
-    overheatTime = Math.max(0, overheatTime - dt * 2);
-  }
 
   const target = input.angle * Math.PI / 180;
   const I = inertia();
@@ -389,25 +368,23 @@ function step(dt) {
     const o = orbs[i];
     if (o.noCatch > 0) o.noCatch -= dt;
 
-    if (!isOver) {
-      for (const { p, aff } of ps) {
-        const dx = o.x - p.x, dy = o.y - p.y;
-        const d = Math.hypot(dx, dy) || 0.001;
-        const ux = dx / d, uy = dy / d;
-        if (aff === o.pol) {
-          if (d < ATTRACT_R) {
-            const f = PULL * (1 - d / ATTRACT_R);
-            o.vx -= ux * f * dt;
-            o.vy -= uy * f * dt;
-          }
-          if (d < POLE_R * 3 && Math.random() < dt * 16) {
-            spawnEnergyToPole(o.x, o.y, p, o.pol);
-          }
-        } else if (d < REPEL_RANGE) {
-          const f = PULL * REPEL * (1 - d / REPEL_RANGE);
-          o.vx += ux * f * dt;
-          o.vy += uy * f * dt;
+    for (const { p, aff } of ps) {
+      const dx = o.x - p.x, dy = o.y - p.y;
+      const d = Math.hypot(dx, dy) || 0.001;
+      const ux = dx / d, uy = dy / d;
+      if (aff === o.pol) {
+        if (d < ATTRACT_R) {
+          const f = PULL * (1 - d / ATTRACT_R);
+          o.vx -= ux * f * dt;
+          o.vy -= uy * f * dt;
         }
+        if (d < POLE_R * 3 && Math.random() < dt * 16) {
+          spawnEnergyToPole(o.x, o.y, p, o.pol);
+        }
+      } else if (d < REPEL_RANGE) {
+        const f = PULL * REPEL * (1 - d / REPEL_RANGE);
+        o.vx += ux * f * dt;
+        o.vy += uy * f * dt;
       }
     }
 
@@ -505,7 +482,6 @@ function updateAudio(dt) {
     audio.setTransfer(0);
     audio.setMass(1);
     audio.setMusicIntensity(0.15);
-    if (wasOverheated) { audio.overheat(false); wasOverheated = false; }
     return;
   }
   audio.setMass(inertia());
@@ -519,8 +495,6 @@ function updateAudio(dt) {
     }
   }
   audio.setTransfer(clamp(stuck.length / 6 + near / 8, 0, 1));
-  const oh = overheated();
-  if (oh !== wasOverheated) { audio.overheat(oh); wasOverheated = oh; }
 }
 
 function updateFfb(dt) {
@@ -651,7 +625,6 @@ function render() {
   for (let x = ox; x < W; x += grid) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
   for (let y = oy; y < H; y += grid) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
 
-  const isOver = overheated();
   const hp = clamp(health / 100, 0, 1);
   const coreColor = hp > 0.5 ? '#57d38c' : (hp > 0.25 ? '#e0a04a' : '#ff5a5f');
   const t = performance.now() / 1000;
@@ -734,14 +707,6 @@ function render() {
     ctx.fillStyle = p.color;
     ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, TAU); ctx.fill();
     ctx.globalAlpha = 1;
-  }
-
-  if (isOver) {
-    ctx.fillStyle = 'rgba(255, 90, 95, 0.95)';
-    ctx.font = '700 18px ui-sans-serif, system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('OVERHEAT — knock off orbs', CX, CY - BAR_HALF - 44);
-    ctx.textAlign = 'start';
   }
 }
 

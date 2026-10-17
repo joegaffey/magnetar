@@ -4,7 +4,7 @@
 
 A one-axis survival game about catching iron orbs on a rotating magnet while they spiral into a black hole.
 
-Every orb that sticks adds mass — the magnet lags and becomes harder to control. Left alone, stuck orbs are slowly absorbed into the black hole, feeding it and restoring its strength. Grab too eagerly or spin too fast and you'll overload the magnet or shed your catch before it pays off.
+Every orb that sticks adds mass — the magnet lags and becomes harder to control. Left alone, stuck orbs are slowly absorbed into the black hole, feeding it and restoring its strength. Grab too eagerly or spin too fast and you'll shed your catch before it pays off.
 
 ## Play
 
@@ -22,13 +22,12 @@ Every orb that sticks adds mass — the magnet lags and becomes harder to contro
 - **Core gravity:** the black hole pulls every orb toward the centre, so positioning matters.
 - **Weight:** each stuck orb adds angular inertia (HUD `Mass`), making the magnet sluggish and overshooty.
 - **Absorb:** stuck orbs slowly shrink and feed the core, restoring `Health` and removing their mass.
-- **Overheat:** above a mass threshold the magnet loses attraction; if it stays hot it vents in a burst.
 - **Unstable orbs:** some detonate at the core for 3× damage (with a blast that shoves nearby orbs and kicks the magnet), but if you catch one it bursts **instantly** for a 3× heal — high risk, high reward.
 - **Escalation:** spawn rate and orb speed climb over time.
 
 ## Audio
 
-Fully procedural via the Web Audio API (no asset files): a **hiss/whoosh** whose pitch and gain track the energy-transfer rate, deep sub-bass explosions, low **thunks** on impacts, an ambient drone, and a mass hum that tracks the magnet's weight. An **adaptive generative score** (warm major-key pads, shimmering arpeggios, soft bass) builds with difficulty and ducks under impacts. It cycles through four sections — including a whole-step key lift and reordered progressions — so it doesn't loop monotonously. Loosely inspired by dreamy, euphoric synth-pop. Sounds are **stereo-panned** by orb position. Bright synthetic ticks accent scoring (pitch rises with a streak) and impacts. **Master**, **Music** and **Mute** live in **Settings** (persisted).
+Fully procedural via the Web Audio API (no asset files): a **hiss/whoosh** whose pitch and gain track the energy-transfer rate, deep sub-bass explosions, low **thunks** on impacts, an ambient drone, and a filtered air layer that tracks the magnet's weight. An **adaptive generative score** (warm major-key pads, shimmering arpeggios, soft bass) builds with difficulty and ducks under impacts. It cycles through four sections — including a whole-step key lift and reordered progressions — so it doesn't loop monotonously. Loosely inspired by dreamy, euphoric synth-pop. Sounds are **stereo-panned** by orb position. Bright synthetic ticks accent scoring (pitch rises with a streak) and impacts. **Master**, **Music** and **Mute** live in **Settings** (persisted), which pauses play while open.
 
 A small music loop can be layered in later without changing the event API.
 
@@ -36,7 +35,7 @@ A small music loop can be layered in later without changing the event API.
 
 Magnetar is built to be played with a real **force-feedback steering wheel**, with no drivers, via the [**webhid-wheel**](https://github.com/joegaffey/webhid-wheel) project.
 
-Click **Connect wheel** and pick your wheelbase — it becomes the steering axis, and its FFB reflects the magnet's mass and rotation (the heavier it gets, the heavier the wheel feels). Use **Settings** to adjust **FFB strength**, **rotation range** (match your wheel's lock-to-lock for 1:1 steering), and **mute audio**. Keyboard, mouse and touch always work, so a wheel is entirely optional.
+Click **Connect wheel** and pick your wheelbase — it becomes the steering axis, and its FFB reflects the magnet's mass and rotation (the heavier it gets, the heavier the wheel feels). Use **Settings** (pauses play) to adjust **FFB strength**, **rotation range** (match your wheel's lock-to-lock for 1:1 steering), **Master/Music** volume and **mute**. Keyboard, mouse and touch always work, so a wheel is entirely optional.
 
 ## Run
 
@@ -57,7 +56,7 @@ Most feel lives in `game.js`:
 - Orbs: `CORE_PULL`, `ORB_DRAG`, `MAX_ORB_SPEED`, spawn rate/speed.
 - Poles: `BAR_HALF`, `ATTRACT_R`, `POLE_R`, `PULL`, `REPEL`, `REPEL_RANGE`.
 - Absorption: `ABSORB_TIME`, `HEAL_PER_ORB`.
-- Overload / shedding: `OVERLOAD_MASS`, `OVERHEAT_VENT`, `SHED_ACCEL`, `SHED_INTERVAL`.
+- Shedding: `SHED_ACCEL`, `SHED_INTERVAL`, `MAX_STUCK`.
 - Volatile orbs: `VOLATILE_CHANCE`, `EXPLOSION_*`.
 
 See [`SPEC.md`](./SPEC.md) for the full design notes and parameter table.

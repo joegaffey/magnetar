@@ -95,22 +95,16 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 - Absorption heals the core gradually (up to `HEAL_PER_ORB` per orb, capped 100) and **removes the orb's mass** once fully absorbed.
 - More absorbing orbs = denser pole→centre flow (and a safer but lighter magnet).
 
-### 5.10 Overload / overheat (experimental, in build)
-- Above `OVERLOAD_MASS` the magnet overheats: **attraction is disabled** and the HUD shows a warning (`Mass 3.xx !` + “OVERHEAT”).
-- If overheat persists for `OVERHEAT_VENT` seconds it **vents**: all stuck orbs are flung off and an explosion fires (angular kick to the magnet).
-- Shedding (spinning) back below the threshold cools it.
-
-### 5.11 Unstable orbs & explosions (in build)
+### 5.10 Unstable orbs & explosions (in build)
 - Some orbs are **unstable** (red ring). Catching one triggers an **instant burst** that transmits power immediately (heals `HEAL_PER_ORB × 3`) — it does **not** stick or absorb gradually.
 - An explosion applies a radial impulse to nearby orbs, an **angular kick to the magnet**, and damages the core if close.
 - An unstable orb reaching the **centre** detonates in a **larger explosion** (1.8× radius/force/particles) and deals **3× core damage** (24) plus the blast damage.
 - Goal: make unstable orbs high-risk / high-reward — grab them for a big heal, but never let one reach the core.
 
-### 5.12 Future mechanics (candidate)
+### 5.11 Future mechanics (candidate)
 - Orb types: heavy, fast, shielded (needs 2 hits).
 - Polarity toggle (only if a button verb is added).
 - Combo/multipliers for chain explosions.
-- Overload variants: blown pole (disabled side) vs. temporary loss of attraction (current).
 
 ## 6. Force feedback
 
@@ -128,13 +122,13 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 ### Palette
 | Role | Hex |
 | --- | --- |
-| Background | `#0d0f14` / `#0b0d12` (radial vignette) |
-| Panels/border | `#161a21` / `#262c37` |
-| Text | `#e8ecf3`; muted `#95a0b3` |
-| Accent | `#4f8cff`; light `#7aa7ff` |
-| Magnet steel | `#c6cfdf`; poles `#4f8cff` |
-| Orb (threat) | `#e0a04a` |
-| Orb (shed) | `#7aa7ff` |
+| Background | `#04050a` (near-black; radial cyan/magenta corner glows + vignette) |
+| Panels/border | `rgba(6, 10, 22, .94)` / neon cyan `#22e1ff` |
+| Text | `#eaffff`; muted `#6fd8ee` |
+| Accent | cyan `#22e1ff`; light `#7dfcff`; magenta `#ff3df0` |
+| HUD values | health `#b6ff3d`, mass `#ff3df0`, score `#ffe14d`, input `#7dfcff`, FFB `#ff8a3d` |
+| Magnet steel | `#c6cfdf`; poles `#e0a04a` / `#7aa7ff` |
+| Orb (amber / blue) | `#e0a04a` / `#7aa7ff` |
 | Core healthy / warn / crit | `#57d38c` / `#e0a04a` / `#ff5a5f` |
 
 ### Shapes & effects
@@ -144,23 +138,24 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 - **Orbs:** glowing circles; volatile orbs get a red ring.
 - **Stuck orbs:** clustered on the pole with a glow; gentle pulse.
 - **Catch:** particle burst at the contact point (reads as a real hit).
-- **Shed:** particle burst at release; shed orbs glow pale blue.
+- **Shed:** particle burst at release; shed orbs keep their polarity colour.
 - **Explosion:** expanding ring + large particle burst (additive), angular kick to the magnet.
 - **Core:** glowing ring gauge (health), dark interior.
 - **Background:** near-black with a faint neon grid.
 - **Particles:** short-lived additive dots with drag; each event colour-coded.
 - **Typography:** system UI sans for HUD; uppercase, letter-spaced micro-labels.
 - **Motion:** snappy spring on the magnet; particles ease out; no unnecessary UI animation.
+- **Interface:** glowing uppercase HUD with color-coded values; sharp neon-outlined buttons with a filled cyan primary; **Settings** is a modal with a dimmed/blurred backdrop and an × close button.
+- **Screen treatment:** subtle scanlines and an edge vignette; overlays stay legible on short/landscape screens (scroll + compact layout).
 
-### Audio (optional, later)
 ### Audio (implemented, procedural)
 - **Energy transfer:** a continuous filtered-noise **hiss/whoosh** whose bandpass pitch and gain track the transfer rate (absorbing orbs + orbs near a pole). Short up/down whooshes mark catches and sheds.
 - **Impacts:** low **thunks** (sine body + filtered noise) for pole collisions and core hits, scaled by impact speed. **Explosions are deep sub-bass** booms + low-passed noise.
-- **Ambient:** dark detuned drone; **mass hum** whose pitch/gain tracks inertia; soft overheat wobble.
-- **Stereo panning** by orb X relative to the core; drone/hum centred.
+- **Ambient:** dark detuned drone; a filtered **air layer** whose brightness/gain tracks inertia.
+- **Stereo panning** by orb X relative to the core; ambient centred.
 - **Bright accents (non-physical):** score blips that rise in pitch with a catch/burst streak, and high hit ticks on pole impacts and core damage, layered over the low thunks.
 - **Adaptive generative score:** an original piece cycling four 4-bar sections — D-major I–V–vi–IV, an E-major lift (up a whole step), then D-major vi–IV–I–V and IV–V–vi–V — with warm detuned pads, a shimmering sine arpeggio, soft bass, and a high lead in later sections. Tempo scales with difficulty; sidechain-style ducking under impacts. Inspired by warm, euphoric synth-pop, not a transcription.
-- **Master, Music volume and Mute** in the generic **Settings** panel, persisted; AudioContext resumed on Start, suspended when the tab is hidden.
+- **Master, Music volume and Mute** in the **Settings** modal, persisted; opening Settings pauses play. AudioContext unlocks on first interaction and suspends when the tab is hidden.
 - Optional later: a small music loop layered on top.
 
 ## 8. Parameters (current)
@@ -185,7 +180,8 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 | `CORE_PULL` | 275 | core gravity-well acceleration on all free orbs |
 | `ORB_DRAG` | 1.1 /s | linear drag on free orbs (≈218 px/s terminal) |
 | `MAX_ORB_SPEED` | 340 px/s | free-orb speed cap |
-| Health / hit | 100 / 12 | core durability |
+| Core health | 100 | durability |
+| Core damage | 8 × energy | normal orb; an unstable orb hit deals 24 + blast |
 | Spawn | 1.6 → 0.45 s | interval over time |
 | Orb speed | 55 → 205 px/s | over time |
 
@@ -197,8 +193,6 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 | `ORB_SIZE` | 8 px | stuck orb render radius |
 | `ABSORB_TIME` | 4.0 s | time for a stuck orb to be fully absorbed |
 | `HEAL_PER_ORB` | 4.0 | health restored per absorbed orb |
-| `OVERLOAD_MASS` | 3.0 | overheat threshold (inertia) |
-| `OVERHEAT_VENT` | 3.0 s | continuous overheat before venting |
 | `VOLATILE_CHANCE` | 0.18 | fraction of orbs that are volatile |
 | `EXPLOSION_R` | 95 px | blast radius |
 | `EXPLOSION_FORCE` | 850 | radial impulse |
@@ -210,15 +204,16 @@ Tuning goals: ~30–45 s to first "heavy" feel; shedding should be attainable in
 ## 9. UX / onboarding
 
 - **Full-viewport canvas**; HUD and controls overlay on top (no letterboxing).
-- **Start gate:** a help overlay with controls and a **Start** button; clicking Start dismisses it and begins play (no auto-start). On failure the same overlay shows results + **Restart**.
-- HUD (top-left): `Health`, `Mass`, `Score`, `Input` (source + FFB), `FFB`; brand wordmark.
-- Top-right: **Connect wheel** (optional) + **Restart** + status.
+- **Start gate:** a help overlay with controls and a **Start** button; tapping it begins play (no auto-start). The overlay scrolls and compacts on short/landscape screens. On failure the same overlay shows results + **Restart**.
+- HUD (top-left): neon color-coded `Health`, `Mass`, `Score`, `Input` (source + FFB), `FFB`; brand wordmark.
+- Top-right: **Connect wheel** (optional), **Settings**, **Restart** + status.
+- **Settings modal:** Audio (Mute, Master, Music) and Wheel (FFB strength, rotation range); opening it **pauses play** and stops FFB; close via ×, backdrop or Esc.
 - Game over overlay: score + caught/unstable counts, **Restart**.
-- Pause on window blur; auto-stop FFB.
+- Audio suspends when the tab is hidden and resumes on return.
 
 ## 10. Technical
 
-- Files: `index.html`, `game.js`, `input.js`; consumes `../webhid-wheel/webhid-wheel.js`.
+- Files: `index.html`, `game.js`, `audio.js`, `input.js`; wheel library vendored at `vendor/webhid-wheel.js`.
 - Fixed timestep simulation at 120 Hz (`STEP = 1/120`), rendered per `requestAnimationFrame`.
 - State: magnet `{φ, ω}`, `stuck[]` (magnet-local coords + mass), free `orbs[]`, `health`, `score`, difficulty timers.
 - FFB sent at ~60 Hz, throttled.
@@ -228,13 +223,12 @@ Tuning goals: ~30–45 s to first "heavy" feel; shedding should be attainable in
 
 - **M0 — prototype (done):** magnet, orbs, catch, inertia, shed, core, HUD, wheel/keyboard/mouse.
 - **M1 — feel pass:** tune inertia/shed/attraction; make weight legible; verify wheel FFB.
-- **M2 — art/juice:** field lines, trails, impact shake, vignette, palette polish.
-- **M3 — content:** orb types, waves, scoring/combo, difficulty tiers.
-- **M4 — inputs:** gamepad; input-source indicator polish; pause.
+- **M2 — art/juice (done):** neon Geometry-Wars palette, bloom, particles, vignette/scanlines, HUD.
+- **M3 — content (in progress):** unstable orbs done; remaining orb types, wave events, combos, difficulty tiers.
+- **M4 — inputs (mostly done):** wheel/keyboard/mouse/touch + settings/pause; gamepad planned.
 
 ## 12. Open questions
 
 - Should the magnet be a bar (two poles) or a single directional pole?
 - Is catching *reward* enough, or should caught orbs be "ammo" to fling at hazards?
 - Should the core ever regenerate?
-- How punishing should overload be (wobble vs. forced shed)?
