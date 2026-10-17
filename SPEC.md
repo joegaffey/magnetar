@@ -68,10 +68,11 @@ I = I0 + Σ m_orb
 ### 5.4 Shedding (buttonless detach)
 Primary: **centrifugal (gradual)** — an orb detaches when `ω²·r > SHED_ACCEL` (outermost first), at most one per `SHED_INTERVAL`; released tangentially with a modest outward bias. Spinning no longer clears everything instantly.
 Secondary: **hard capacity** — if `stuck ≥ MAX_STUCK`, the oldest orb is ejected automatically (prevents a dead-end).
+A detached orb becomes an ordinary free orb again: it keeps its polarity colour and can be re-caught. Its remaining energy (`size / ORB_SIZE`) scales its radius and the core damage it deals.
 
 ### 5.5 Core & failure
 - Core at centre; hitting it damages `Health` (orb contact within `CORE_R + r`).
-- Shed orbs do not damage the core.
+- A detached orb that reaches the core damages `Health` in proportion to its remaining energy (`size / ORB_SIZE`).
 - `Health ≤ 0` → game over.
 
 ### 5.6 Escalation

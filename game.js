@@ -194,7 +194,7 @@ function spawnOrb() {
     r: 12,
     pol: Math.random() < 0.5 ? 0 : 1,
     volatile: Math.random() < VOLATILE_CHANCE,
-    shed: false
+    energy: 1
   });
 }
 
@@ -246,9 +246,10 @@ function powerBurst(x, y, pol) {
 function catchOrb(orb) {
   if (orb.volatile) { powerBurst(orb.x, orb.y, orb.pol); return; }
   if (stuck.length >= MAX_STUCK) shedOne(0, true);
+  const energy = orb.energy !== undefined ? orb.energy : 1;
   const dx = orb.x - CX, dy = orb.y - CY;
   const c = Math.cos(-magnet.phi), s = Math.sin(-magnet.phi);
-  stuck.push({ lx: dx * c - dy * s, ly: dx * s + dy * c, mass: ORB_MASS, pol: orb.pol, size: ORB_SIZE });
+  stuck.push({ lx: dx * c - dy * s, ly: dx * s + dy * c, mass: ORB_MASS * energy, pol: orb.pol, size: ORB_SIZE * energy });
   caught++;
   score += 1;
   spawnParticles(orb.x, orb.y, ORB_COLORS[orb.pol], 12, 220);
@@ -302,10 +303,11 @@ function shedOne(index, quiet) {
   const sp = Math.hypot(vx, vy) || 1;
   const cap = 180;
   if (sp > cap) { vx = vx / sp * cap; vy = vy / sp * cap; }
+  const energy = clamp(o.size / ORB_SIZE, 0.15, 1);
   orbs.push({
     x: wx, y: wy, vx, vy,
-    r: 11, pol: o.pol, volatile: false, shed: true,
-    life: 1.4, maxLife: 1.4
+    r: 6 + 6 * energy,
+    pol: o.pol, volatile: false, energy
   });
   stuck.splice(index, 1);
   if (!quiet) {
@@ -372,12 +374,7 @@ function step(dt) {
   for (let i = orbs.length - 1; i >= 0; i--) {
     const o = orbs[i];
 
-    if (o.shed) {
-      o.life -= dt;
-      if (o.life <= 0) { orbs.splice(i, 1); continue; }
-    }
-
-    if (!o.shed && !isOver) {
+    if (!isOver) {
       for (const { p, aff } of ps) {
         const dx = o.x - p.x, dy = o.y - p.y;
         const d = Math.hypot(dx, dy) || 0.001;
@@ -400,21 +397,19 @@ function step(dt) {
     }
 
     // core gravity well
-    if (!o.shed) {
-      const dxc = CX - o.x, dyc = CY - o.y;
-      const dc = Math.hypot(dxc, dyc) || 0.001;
-      o.vx += (dxc / dc) * CORE_PULL * dt;
-      o.vy += (dyc / dc) * CORE_PULL * dt;
-      o.vx -= o.vx * ORB_DRAG * dt;
-      o.vy -= o.vy * ORB_DRAG * dt;
-      const sp = Math.hypot(o.vx, o.vy);
-      if (sp > MAX_ORB_SPEED) { o.vx = o.vx / sp * MAX_ORB_SPEED; o.vy = o.vy / sp * MAX_ORB_SPEED; }
-    }
+    const dxc = CX - o.x, dyc = CY - o.y;
+    const dc = Math.hypot(dxc, dyc) || 0.001;
+    o.vx += (dxc / dc) * CORE_PULL * dt;
+    o.vy += (dyc / dc) * CORE_PULL * dt;
+    o.vx -= o.vx * ORB_DRAG * dt;
+    o.vy -= o.vy * ORB_DRAG * dt;
+    const osp = Math.hypot(o.vx, o.vy);
+    if (osp > MAX_ORB_SPEED) { o.vx = o.vx / osp * MAX_ORB_SPEED; o.vy = o.vy / osp * MAX_ORB_SPEED; }
 
     o.x += o.vx * dt;
     o.y += o.vy * dt;
 
-    if (o.volatile && !o.shed && Math.random() < dt * 18) {
+    if (o.volatile && Math.random() < dt * 18) {
       const life = 0.25 + Math.random() * 0.25;
       particles.push({
         x: o.x, y: o.y,
@@ -424,26 +419,25 @@ function step(dt) {
       });
     }
 
-    if (!o.shed) {
-      let didCatch = false;
-      for (const { p, aff } of ps) {
-        if (aff === o.pol && Math.hypot(o.x - p.x, o.y - p.y) < POLE_R) {
-          catchOrb(o);
-          orbs.splice(i, 1);
-          didCatch = true;
-          break;
-        }
+    let didCatch = false;
+    for (const { p, aff } of ps) {
+      if (aff === o.pol && Math.hypot(o.x - p.x, o.y - p.y) < POLE_R) {
+        catchOrb(o);
+        orbs.splice(i, 1);
+        didCatch = true;
+        break;
       }
-      if (didCatch) continue;
-      if (collidePoles(o)) continue;
     }
+    if (didCatch) continue;
+    if (collidePoles(o)) continue;
 
     if (Math.hypot(o.x - CX, o.y - CY) < CORE_R + o.r) {
-      if (o.volatile && !o.shed) {
+      if (o.volatile) {
         explode(o.x, o.y, true);
         health -= 24;
-      } else if (!o.shed) {
-        health -= 8;
+      } else {
+        const energy = o.energy !== undefined ? o.energy : 1;
+        health -= 8 * energy;
         spawnParticles(o.x, o.y, '#ff5a5f', 14, 240);
         audio.damage(panOf(o.x));
       }
@@ -499,7 +493,6 @@ function updateAudio(dt) {
   let near = 0;
   const ps = poles();
   for (const o of orbs) {
-    if (o.shed) continue;
     for (const { p, aff } of ps) {
       if (aff !== o.pol) continue;
       if (Math.hypot(o.x - p.x, o.y - p.y) < POLE_R * 3) { near++; break; }
@@ -650,14 +643,11 @@ function render() {
 
   // orbs (glow + core)
   for (const o of orbs) {
-    const col = o.shed ? '#9dbcff' : ORB_COLORS[o.pol];
-    const alpha = o.shed ? clamp(o.life / (o.maxLife || 1.4), 0, 1) : 1;
-    drawGlow(o.x, o.y, o.r * 3, col, 0.55 * alpha);
-    ctx.globalAlpha = alpha;
+    const col = ORB_COLORS[o.pol];
+    drawGlow(o.x, o.y, o.r * 3, col, 0.55);
     ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, TAU);
     ctx.fillStyle = col; ctx.fill();
-    ctx.globalAlpha = 1;
-    if (o.volatile && !o.shed) {
+    if (o.volatile) {
       const pulse = 0.5 + 0.5 * Math.sin(t * 10 + o.x * 0.05);
       drawGlow(o.x, o.y, o.r * 4.5, '#ff5a5f', 0.3 + 0.35 * pulse);
       ctx.beginPath(); ctx.arc(o.x, o.y, o.r + 6 + pulse * 3, 0, TAU);
