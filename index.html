@@ -138,10 +138,11 @@
       .wheel-panel .check input { accent-color: var(--accent); }
 
       #overlay {
-        position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
-        background: rgba(3, 6, 14, .55); padding: 24px;
+        position: fixed; inset: 0; z-index: 20; display: flex; overflow-y: auto;
+        background: rgba(3, 6, 14, .55); padding: 20px;
       }
       #overlay .card {
+        margin: auto;
         background: var(--panel); border: 1.5px solid var(--accent); border-radius: 2px;
         padding: 30px 34px; text-align: center; max-width: 460px;
         box-shadow: 0 0 30px rgba(34, 225, 255, .30), inset 0 0 40px rgba(34, 225, 255, .05);
@@ -152,6 +153,13 @@
       }
       #overlay p { margin: 0 0 20px; color: var(--muted); font-size: .9rem; line-height: 1.5; }
       .hidden { display: none !important; }
+
+      @media (max-height: 560px) {
+        #overlay { padding: 12px; }
+        #overlay .card { padding: 18px 20px; max-width: 520px; }
+        #overlay h2 { font-size: 1.2rem; letter-spacing: .2em; }
+        #overlay p { font-size: .8rem; line-height: 1.4; margin-bottom: 14px; }
+      }
 
       @media (max-width: 860px) {
         .topui { flex-direction: column-reverse; align-items: center; gap: 8px; }
@@ -237,6 +245,6 @@
       </div>
     </div>
 
-    <script type="module" src="game.js"></script>
+    <script type="module" src="game.js?v=20261017"></script>
   </body>
 </html>

@@ -1,5 +1,5 @@
-import { SteeringInput } from './input.js';
-import { AudioEngine } from './audio.js';
+import { SteeringInput } from './input.js?v=20261017';
+import { AudioEngine } from './audio.js?v=20261017';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -149,6 +149,9 @@ function reset() {
   overlay.classList.add('hidden');
   syncHud();
 }
+
+overlay.querySelector('button').addEventListener('click', () => reset());
+document.getElementById('restartButton').addEventListener('click', () => reset());
 
 function inertia() {
   return BASE_I + stuck.reduce((a, o) => a + o.mass, 0);
@@ -767,25 +770,30 @@ function resumeGame() {
 }
 
 function openSettings() {
+  if (!settingsModal) return;
   settingsModal.classList.remove('hidden');
   pauseGame();
 }
 
 function closeSettings() {
+  if (!settingsModal) return;
   settingsModal.classList.add('hidden');
   resumeGame();
 }
 
 wheelSettingsBtn.addEventListener('click', () => {
+  if (!settingsModal) return;
   if (settingsModal.classList.contains('hidden')) openSettings();
   else closeSettings();
 });
-settingsClose.addEventListener('click', closeSettings);
-settingsModal.addEventListener('click', (e) => {
-  if (!e.target.closest('.wheel-panel')) closeSettings();
-});
+if (settingsClose) settingsClose.addEventListener('click', closeSettings);
+if (settingsModal) {
+  settingsModal.addEventListener('click', (e) => {
+    if (!e.target.closest('.wheel-panel')) closeSettings();
+  });
+}
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && !settingsModal.classList.contains('hidden')) closeSettings();
+  if (e.key === 'Escape' && settingsModal && !settingsModal.classList.contains('hidden')) closeSettings();
 });
 ffbStrengthInput.addEventListener('input', () => {
   ffbStrengthVal.textContent = ffbStrengthInput.value + '%';
@@ -838,9 +846,6 @@ const unlockAudio = () => audio.init();
 for (const ev of ['pointerdown', 'touchstart', 'touchend', 'pointerup', 'keydown']) {
   window.addEventListener(ev, unlockAudio, { passive: true });
 }
-
-document.getElementById('restartButton').addEventListener('click', () => reset());
-overlay.querySelector('button').addEventListener('click', () => reset());
 
 canvas.addEventListener('mousemove', (e) => {
   const r = canvas.getBoundingClientRect();
