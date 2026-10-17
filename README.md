@@ -28,7 +28,7 @@ Every orb that sticks adds mass — the magnet lags and becomes harder to contro
 
 ## Audio
 
-Fully procedural via the Web Audio API (no asset files): a **hiss/whoosh** whose pitch and gain track the energy-transfer rate, deep sub-bass explosions, low **thunks** on impacts, an ambient drone, and a mass hum that tracks the magnet's weight. Sounds are **stereo-panned** by orb position. **Mute** lives in **Settings** (persisted).
+Fully procedural via the Web Audio API (no asset files): a **hiss/whoosh** whose pitch and gain track the energy-transfer rate, deep sub-bass explosions, low **thunks** on impacts, an ambient drone, and a mass hum that tracks the magnet's weight. Sounds are **stereo-panned** by orb position. **Mute** and **volume** live in **Settings** (persisted).
 
 A small music loop can be layered in later without changing the event API.
 

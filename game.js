@@ -17,6 +17,8 @@ const ffbStrengthVal = document.getElementById('ffbStrengthVal');
 const wheelRangeInput = document.getElementById('wheelRange');
 const wheelRangeVal = document.getElementById('wheelRangeVal');
 const muteToggle = document.getElementById('muteToggle');
+const volumeInput = document.getElementById('volume');
+const volumeVal = document.getElementById('volumeVal');
 
 let W = 0, H = 0, CX = 0, CY = 0, DPR = 1;
 
@@ -749,6 +751,18 @@ muteToggle.checked = storedMute;
 muteToggle.addEventListener('change', () => {
   audio.setMuted(muteToggle.checked);
   localStorage.setItem('magnetar-muted', muteToggle.checked ? '1' : '0');
+});
+
+const storedVolume = parseFloat(localStorage.getItem('magnetar-volume'));
+const initialVolume = Number.isNaN(storedVolume) ? 0.7 : storedVolume;
+audio.setVolume(initialVolume);
+volumeInput.value = Math.round(initialVolume * 100);
+volumeVal.textContent = Math.round(initialVolume * 100);
+volumeInput.addEventListener('input', () => {
+  const v = parseInt(volumeInput.value) / 100;
+  audio.setVolume(v);
+  volumeVal.textContent = volumeInput.value;
+  localStorage.setItem('magnetar-volume', String(v));
 });
 
 document.addEventListener('visibilitychange', () => {

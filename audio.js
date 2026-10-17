@@ -6,7 +6,7 @@ export class AudioEngine {
     this.ambient = null;
     this.overheatNode = null;
     this.muted = false;
-    this.volume = 0.6;
+    this.volume = 0.7;
   }
 
   init() {
@@ -44,6 +44,13 @@ export class AudioEngine {
     this.muted = muted;
     if (this.master && this.ctx) {
       this.master.gain.setTargetAtTime(muted ? 0 : this.volume, this.ctx.currentTime, 0.03);
+    }
+  }
+
+  setVolume(volume) {
+    this.volume = Math.max(0, Math.min(1, volume));
+    if (this.master && this.ctx && !this.muted) {
+      this.master.gain.setTargetAtTime(this.volume, this.ctx.currentTime, 0.03);
     }
   }
 
@@ -109,42 +116,42 @@ export class AudioEngine {
   }
 
   catch(pan = 0) {
-    this.whoosh(pan, 1, 0.09, 0.24);
+    this.whoosh(pan, 1, 0.15, 0.24);
   }
 
   shed(pan = 0) {
-    this.whoosh(pan, -1, 0.06, 0.28);
+    this.whoosh(pan, -1, 0.1, 0.28);
   }
 
   burst(pan = 0) {
-    this.whoosh(pan, 1, 0.16, 0.38);
-    this.thunk(pan, 0.55);
+    this.whoosh(pan, 1, 0.24, 0.38);
+    this.thunk(pan, 0.8);
   }
 
   thunk(pan = 0, strength = 1) {
-    const g = Math.min(0.4, 0.22 * strength);
+    const g = Math.min(0.55, 0.34 * strength);
     this._tone(140, { type: 'sine', dur: 0.22, gain: g, pan, glide: 55, attack: 0.004 });
-    this._tone(205, { type: 'triangle', dur: 0.1, gain: g * 0.4, pan, glide: 90 });
-    this._noise({ dur: 0.09, gain: g * 0.5, pan, freq: 520, q: 0.6, type: 'lowpass', sweepTo: 120 });
+    this._tone(205, { type: 'triangle', dur: 0.1, gain: g * 0.45, pan, glide: 90 });
+    this._noise({ dur: 0.09, gain: g * 0.55, pan, freq: 520, q: 0.6, type: 'lowpass', sweepTo: 120 });
   }
 
   damage(pan = 0) {
-    this.thunk(pan, 1.4);
-    this._tone(90, { type: 'sine', dur: 0.35, gain: 0.16, pan, glide: 45 });
+    this.thunk(pan, 1.7);
+    this._tone(90, { type: 'sine', dur: 0.35, gain: 0.22, pan, glide: 45 });
   }
 
   explode(scale = 1, pan = 0) {
     const k = Math.sqrt(scale);
-    this._tone(75 / k, { type: 'sine', dur: 0.8 * scale, gain: 0.42, pan, glide: 26, attack: 0.008 });
-    this._tone(135 / k, { type: 'triangle', dur: 0.5 * scale, gain: 0.15, pan, glide: 45 });
-    this._noise({ dur: 0.8 * scale, gain: 0.2, pan, freq: 420, q: 0.5, type: 'lowpass', sweepTo: 45 });
+    this._tone(75 / k, { type: 'sine', dur: 0.8 * scale, gain: 0.58, pan, glide: 26, attack: 0.008 });
+    this._tone(135 / k, { type: 'triangle', dur: 0.5 * scale, gain: 0.2, pan, glide: 45 });
+    this._noise({ dur: 0.8 * scale, gain: 0.28, pan, freq: 420, q: 0.5, type: 'lowpass', sweepTo: 45 });
   }
 
   gameOver() {
     this.overheat(false);
-    this._tone(110, { type: 'sine', dur: 1.1, gain: 0.22, glide: 38 });
-    this._tone(55, { type: 'triangle', dur: 1.3, gain: 0.16, glide: 28 });
-    this._noise({ dur: 1.0, gain: 0.1, freq: 300, type: 'lowpass', sweepTo: 60 });
+    this._tone(110, { type: 'sine', dur: 1.1, gain: 0.3, glide: 38 });
+    this._tone(55, { type: 'triangle', dur: 1.3, gain: 0.21, glide: 28 });
+    this._noise({ dur: 1.0, gain: 0.14, freq: 300, type: 'lowpass', sweepTo: 60 });
   }
 
   overheat(on) {
@@ -164,7 +171,7 @@ export class AudioEngine {
 
       const g = this.ctx.createGain();
       g.gain.value = 0.0001;
-      g.gain.exponentialRampToValueAtTime(0.035, t0 + 0.25);
+      g.gain.exponentialRampToValueAtTime(0.045, t0 + 0.25);
 
       osc.connect(g); g.connect(this.master);
       osc.start(); lfo.start();
@@ -247,6 +254,6 @@ export class AudioEngine {
     const t = this.ctx.currentTime;
     const r = Math.max(0, Math.min(1, rate));
     this.ambient.tf.frequency.setTargetAtTime(280 + r * 1200, t, 0.12);
-    this.ambient.tg.gain.setTargetAtTime(0.0001 + r * 0.03, t, 0.12);
+    this.ambient.tg.gain.setTargetAtTime(0.0001 + r * 0.012, t, 0.12);
   }
 }

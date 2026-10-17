@@ -157,7 +157,7 @@ Secondary: **hard capacity** — if `stuck ≥ MAX_STUCK`, the oldest orb is eje
 - **Impacts:** low **thunks** (sine body + filtered noise) for pole collisions and core hits, scaled by impact speed. **Explosions are deep sub-bass** booms + low-passed noise.
 - **Ambient:** dark detuned drone; **mass hum** whose pitch/gain tracks inertia; soft overheat wobble.
 - **Stereo panning** by orb X relative to the core; drone/hum centred.
-- **Mute** in the generic **Settings** panel, persisted; AudioContext resumed on Start, suspended when the tab is hidden.
+- **Mute + volume** in the generic **Settings** panel, persisted; AudioContext resumed on Start, suspended when the tab is hidden.
 - Optional later: a small music loop layered on top.
 
 ## 8. Parameters (current)
