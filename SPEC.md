@@ -153,11 +153,12 @@ Secondary: **hard capacity** — if `stuck ≥ MAX_STUCK`, the oldest orb is eje
 
 ### Audio (optional, later)
 ### Audio (implemented, procedural)
-- **Event SFX (Web Audio, no assets):** metallic catch ping (pitch by polarity), unstable burst, explosion thump + noise, shed whoosh, damage tone, overheat alarm, absorption ticks, game-over sting.
-- **Ambient layers:** dark detuned drone; **mass hum** whose pitch/gain tracks inertia; proximity **tension** tone as orbs near a pole.
-- **Stereo panning** by orb X relative to the core; black hole stays centred.
-- **Mute** in the generic **Settings** panel, persisted in `localStorage`; AudioContext resumed on the Start gesture and suspended when the tab is hidden.
-- Optional later: a small music loop layered on top (does not change the SFX API).
+- **Energy transfer:** a continuous filtered-noise **hiss/whoosh** whose bandpass pitch and gain track the transfer rate (absorbing orbs + orbs near a pole). Short up/down whooshes mark catches and sheds.
+- **Impacts:** low **thunks** (sine body + filtered noise) for pole collisions and core hits, scaled by impact speed. **Explosions are deep sub-bass** booms + low-passed noise.
+- **Ambient:** dark detuned drone; **mass hum** whose pitch/gain tracks inertia; soft overheat wobble.
+- **Stereo panning** by orb X relative to the core; drone/hum centred.
+- **Mute** in the generic **Settings** panel, persisted; AudioContext resumed on Start, suspended when the tab is hidden.
+- Optional later: a small music loop layered on top.
 
 ## 8. Parameters (current)
 

@@ -219,7 +219,7 @@ function explode(x, y, big = false) {
 
 function powerBurst(x, y, pol) {
   health = Math.min(100, health + HEAL_PER_ORB * 3);
-  audio.burst(pol, panOf(x));
+  audio.burst(panOf(x));
   score += 1;
   exploded++;
   explosions.push({ x, y, life: 0.45, max: 0.45, scale: 1.2 });
@@ -248,7 +248,7 @@ function catchOrb(orb) {
   caught++;
   score += 1;
   spawnParticles(orb.x, orb.y, ORB_COLORS[orb.pol], 12, 220);
-  audio.catch(orb.pol, panOf(orb.x));
+  audio.catch(panOf(orb.x));
   jolt = 0.09;
   joltDir = Math.sign(orb.x - CX) || 1;
   joltForce = 0.8;
@@ -276,6 +276,7 @@ function collidePoles(o) {
       joltDir = Math.sign(nx) || 1;
       joltForce = clamp(0.25 + impact / 1200, 0.25, 0.7);
       spawnParticles(p.x + nx * POLE_BODY_R, p.y + ny * POLE_BODY_R, '#cfe0ff', 6, 160);
+      audio.thunk(panOf(p.x), clamp(impact / 300, 0.3, 1.2));
     }
     hit = true;
   }
@@ -483,19 +484,19 @@ requestAnimationFrame(frame);
 
 function updateAudio(dt) {
   audioAccum += dt;
-  if (audioAccum < 0.08) return;
+  if (audioAccum < 0.06) return;
   audioAccum = 0;
   audio.setMass(inertia());
-  let nearest = Infinity;
+  let near = 0;
   const ps = poles();
   for (const o of orbs) {
     if (o.shed) continue;
-    for (const { p } of ps) {
-      const d = Math.hypot(o.x - p.x, o.y - p.y);
-      if (d < nearest) nearest = d;
+    for (const { p, aff } of ps) {
+      if (aff !== o.pol) continue;
+      if (Math.hypot(o.x - p.x, o.y - p.y) < POLE_R * 3) { near++; break; }
     }
   }
-  audio.setTension(nearest === Infinity ? 0 : clamp(1 - nearest / ATTRACT_R, 0, 1));
+  audio.setTransfer(clamp(stuck.length / 6 + near / 8, 0, 1));
   const oh = overheated();
   if (oh !== wasOverheated) { audio.overheat(oh); wasOverheated = oh; }
 }
@@ -569,7 +570,6 @@ function spawnStuckEnergy(o) {
   const wx = CX + o.lx * c - o.ly * s;
   const wy = CY + o.lx * s + o.ly * c;
   spawnEnergyToPole(wx, wy, nearestPole(wx, wy), o.pol);
-  audio.absorb(panOf(wx));
 }
 
 function updateStreams(dt) {
