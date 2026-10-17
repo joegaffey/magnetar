@@ -31,15 +31,14 @@ Click **Connect wheel** and pick your wheelbase — it becomes the steering axis
 
 ## Run
 
-The page imports the sibling library at `../webhid-wheel/webhid-wheel.js`, so serve the folder containing both repos and open the game path:
-
 ```sh
-# from the folder that contains `webhid-wheel/` and `magnetar/`
-npx serve ..
-# then open http://localhost:3000/magnetar/
+npx serve
+# open the URL it prints (e.g. http://localhost:3000)
 ```
 
-Use a Chromium-based browser with WebHID for the wheel; keyboard and mouse work in any modern browser.
+Use a Chromium-based browser with WebHID for the wheel; keyboard, mouse and touch work in any modern browser.
+
+The wheel library is vendored at [`vendor/webhid-wheel.js`](./vendor/webhid-wheel.js) (a copy of [webhid-wheel](https://github.com/joegaffey/webhid-wheel)) so the page is self-contained; refresh it from that repo when the library changes.
 
 ## Tuning
 
