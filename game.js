@@ -106,12 +106,12 @@ function drawGlow(x, y, radius, color, alpha = 1) {
   ctx.globalCompositeOperation = 'source-over';
 }
 
-function spawnParticles(x, y, color, n, speed) {
+function spawnParticles(x, y, color, n, speed, sizeScale = 1) {
   for (let i = 0; i < n; i++) {
     const a = Math.random() * TAU;
     const s = speed * rand(0.2, 1);
     const life = rand(0.25, 0.6);
-    particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life, max: life, color, size: rand(1.5, 3) });
+    particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life, max: life, color, size: rand(1.5, 3) * sizeScale });
   }
 }
 
@@ -177,8 +177,10 @@ function spawnOrb() {
 }
 
 function explode(x, y) {
-  explosions.push({ x, y, life: 0.4, max: 0.4 });
-  spawnParticles(x, y, '#ff7a5a', 34, 520);
+  explosions.push({ x, y, life: 0.45, max: 0.45 });
+  spawnParticles(x, y, '#fff2d0', 12, 560, 0.8);
+  spawnParticles(x, y, '#ffb070', 20, 480, 1.2);
+  spawnParticles(x, y, '#ff5a5f', 16, 360, 1);
   for (const o of orbs) {
     const dx = o.x - x, dy = o.y - y;
     const d = Math.hypot(dx, dy);
@@ -545,24 +547,32 @@ function render() {
     ctx.fillStyle = ORB_COLORS[o.pol]; ctx.fill();
   }
 
-  // explosion rings
+  // explosions: hot flash + additive shock rings
   for (const e of explosions) {
-    const t = 1 - e.life / e.max;
-    ctx.beginPath(); ctx.arc(e.x, e.y, EXPLOSION_R * t, 0, TAU);
-    ctx.strokeStyle = 'rgba(255, 120, 90, ' + (1 - t) + ')';
-    ctx.lineWidth = 4; ctx.stroke();
+    const tt = 1 - e.life / e.max;
+    const fade = e.life / e.max;
+    const r = EXPLOSION_R * (0.35 + 0.65 * tt);
+    drawGlow(e.x, e.y, r * 1.5, '#ffb070', 0.5 * fade * fade);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.strokeStyle = 'rgba(255, 170, 110, ' + (0.85 * fade) + ')';
+    ctx.lineWidth = 5 * fade + 1;
+    ctx.beginPath(); ctx.arc(e.x, e.y, r, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255, 240, 220, ' + (0.6 * fade) + ')';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(e.x, e.y, r * 0.7, 0, TAU); ctx.stroke();
+    ctx.restore();
   }
 
-  // particles (additive)
-  ctx.globalCompositeOperation = 'lighter';
+  // particles (glow + bright core)
   for (const p of particles) {
     const a = clamp(p.life / p.max, 0, 1);
+    drawGlow(p.x, p.y, p.size * 3.5, p.color, 0.55 * a);
     ctx.globalAlpha = a;
     ctx.fillStyle = p.color;
     ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 1;
   }
-  ctx.globalAlpha = 1;
-  ctx.globalCompositeOperation = 'source-over';
 
   if (isOver) {
     ctx.fillStyle = 'rgba(255, 90, 95, 0.95)';
