@@ -120,6 +120,7 @@
         font-size: .62rem; font-weight: 800; letter-spacing: .22em; text-transform: uppercase;
         color: var(--accent); text-shadow: 0 0 8px rgba(34, 225, 255, .75); margin-top: 2px;
       }
+      .wheel-panel .state { font-size: .62rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--orange); }
       .wheel-panel .check { display: flex; align-items: center; gap: 8px; font-size: .7rem; font-weight: 700; letter-spacing: .10em; text-transform: uppercase; color: var(--muted); }
       .wheel-panel .check input { accent-color: var(--accent); }
 
@@ -175,6 +176,7 @@
 
     <div class="ui wheel-panel hidden" id="wheelPanel">
       <div class="section">Audio</div>
+      <div class="state" id="audioState">Audio: off</div>
       <label class="check"><input type="checkbox" id="muteToggle"> Mute audio</label>
       <div class="row">
         <label for="volume">Master</label>

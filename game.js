@@ -21,6 +21,7 @@ const volumeInput = document.getElementById('volume');
 const volumeVal = document.getElementById('volumeVal');
 const musicInput = document.getElementById('music');
 const musicVal = document.getElementById('musicVal');
+const audioStateEl = document.getElementById('audioState');
 
 let W = 0, H = 0, CX = 0, CY = 0, DPR = 1;
 
@@ -142,6 +143,7 @@ function reset() {
   running = true; over = false; overheatTime = 0; shedCooldown = 0; jolt = 0; joltForce = 0;
   input.angle = 0;
   audio.init();
+  syncAudioState();
   audio.overheat(false);
   audio.setMusicIntensity(0.2);
   wasOverheated = false;
@@ -792,15 +794,24 @@ musicInput.addEventListener('input', () => {
   localStorage.setItem('magnetar-music', String(v));
 });
 
+function syncAudioState() {
+  const state = audio.ctx ? audio.ctx.state : 'off';
+  audioStateEl.textContent = 'Audio: ' + state + (audio.muted ? ' \u00b7 muted' : '');
+  audioStateEl.style.color = state === 'running' && !audio.muted ? 'var(--lime)' : 'var(--orange)';
+}
+
 document.addEventListener('visibilitychange', () => {
   if (!audio.ctx) return;
   if (document.hidden) audio.ctx.suspend();
   else audio.unlock();
+  syncAudioState();
 });
 
-for (const ev of ['pointerdown', 'touchstart', 'keydown']) {
-  window.addEventListener(ev, () => audio.unlock(), { passive: true });
+const unlockAudio = () => { audio.init(); syncAudioState(); };
+for (const ev of ['pointerdown', 'touchstart', 'touchend', 'pointerup', 'keydown']) {
+  window.addEventListener(ev, unlockAudio, { passive: true });
 }
+setInterval(syncAudioState, 1000);
 
 document.getElementById('restartButton').addEventListener('click', () => reset());
 overlay.querySelector('button').addEventListener('click', () => reset());
