@@ -2,7 +2,7 @@
 
 A rotation-controlled survival game built on the [`webhid-wheel`](../webhid-wheel) library.
 
-Catch iron orbs on a rotating bar magnet to protect the core. Every orb that sticks adds mass: the magnet lags, overshoots and becomes harder to control (and the wheel gets heavier via force feedback). **Spin fast to shed** stuck orbs before you're overloaded. Difficulty escalates.
+Catch iron orbs on a rotating magnet to protect the core. Each stuck orb adds mass (the magnet lags and the wheel gets heavier), but is slowly absorbed into the core, restoring its strength. **Avoid spinning too fast** — that sheds orbs before they can be absorbed. Difficulty escalates.
 
 ## Controls
 
@@ -18,7 +18,8 @@ The input source is auto-selected by whichever you used last. Wheel FFB is only 
 
 - **Catch:** orbs are pulled to the nearest pole; contact sticks them.
 - **Weight:** stuck orbs raise the magnet's angular inertia (shown as `Mass`).
-- **Shed:** when the magnet's angular speed exceeds the threshold, stuck orbs are flung off tangentially (centrifugal). There's also a hard capacity fallback.
+- **Absorb:** stuck orbs slowly shrink, feeding the core and restoring `Health` — this is the intended payoff.
+- **Shed (avoid):** spinning too fast flings stuck orbs off before they can be absorbed. There's also a hard capacity fallback.
 - **Threat:** orbs that reach the core damage `Health`.
 - **Escalation:** spawn rate and orb speed increase over time.
 
