@@ -159,6 +159,8 @@ function gameOver() {
   over = true; running = false;
   input.stopFfb();
   audio.gameOver();
+  audio.setTransfer(0);
+  audio.setMass(1);
   overlay.querySelector('h2').textContent = 'Core breached';
   overlay.querySelector('p').textContent = 'Score: ' + score + ' · caught ' + caught + ' · unstable ' + exploded + '.';
   overlay.classList.remove('hidden');
@@ -486,6 +488,12 @@ function updateAudio(dt) {
   audioAccum += dt;
   if (audioAccum < 0.06) return;
   audioAccum = 0;
+  if (!running) {
+    audio.setTransfer(0);
+    audio.setMass(1);
+    if (wasOverheated) { audio.overheat(false); wasOverheated = false; }
+    return;
+  }
   audio.setMass(inertia());
   let near = 0;
   const ps = poles();
