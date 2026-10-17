@@ -80,7 +80,7 @@ Secondary: **hard capacity** — if `stuck ≥ MAX_STUCK`, the oldest orb is eje
 - Planned: wave events (bursts, fast orbs), difficulty tiers.
 
 ### 5.7 Scoring
-- `+1` per catch, `+2` per shed. (Planned: survival ticks, combo/multipliers.)
+- `+1` per catch. Shedding never scores. (Planned: survival ticks, combo/multipliers.)
 
 ### 5.8 Polarity (experimental, in build)
 - Two poles with opposite affinity: the `+BAR_HALF` pole attracts **amber** orbs (pol 0), the `-BAR_HALF` pole attracts **blue** orbs (pol 1).
@@ -204,7 +204,7 @@ Tuning goals: ~30–45 s to first "heavy" feel; shedding should be attainable in
 - **Start gate:** a help overlay with controls and a **Start** button; clicking Start dismisses it and begins play (no auto-start). On failure the same overlay shows results + **Restart**.
 - HUD (top-left): `Health`, `Mass`, `Score`, `Input` (source + FFB), `FFB`; brand wordmark.
 - Top-right: **Connect wheel** (optional) + **Restart** + status.
-- Game over overlay: score + caught/shed/volatile counts, **Restart**.
+- Game over overlay: score + caught/unstable counts, **Restart**.
 - Pause on window blur; auto-stop FFB.
 
 ## 10. Technical

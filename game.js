@@ -79,7 +79,7 @@ let stuck = [];
 let orbs = [];
 let explosions = [];
 let particles = [];
-let health = 100, score = 0, caught = 0, shedCount = 0, exploded = 0;
+let health = 100, score = 0, caught = 0, exploded = 0;
 let difficulty = 0, spawnTimer = 1.0, spawnEvery = 1.6;
 let running = false, over = false;
 let overheatTime = 0, shedCooldown = 0;
@@ -127,7 +127,7 @@ function spawnParticles(x, y, color, n, speed, sizeScale = 1) {
 function reset() {
   magnet = { phi: 0, omega: 0 };
   stuck = []; orbs = []; explosions = []; particles = []; streams = []; streamTimer = 0;
-  health = 100; score = 0; caught = 0; shedCount = 0; exploded = 0;
+  health = 100; score = 0; caught = 0; exploded = 0;
   difficulty = 0; spawnTimer = 0.9; spawnEvery = 1.6;
   running = true; over = false; overheatTime = 0; shedCooldown = 0; jolt = 0; joltForce = 0;
   input.angle = 0;
@@ -151,7 +151,7 @@ function gameOver() {
   over = true; running = false;
   input.stopFfb();
   overlay.querySelector('h2').textContent = 'Core breached';
-  overlay.querySelector('p').textContent = 'Score: ' + score + ' · caught ' + caught + ' · shed ' + shedCount + ' · volatile ' + exploded + '.';
+  overlay.querySelector('p').textContent = 'Score: ' + score + ' · caught ' + caught + ' · unstable ' + exploded + '.';
   overlay.classList.remove('hidden');
   overlay.querySelector('button').textContent = 'Restart';
 }
@@ -291,8 +291,6 @@ function shedOne(index, quiet) {
     life: 1.4, maxLife: 1.4
   });
   stuck.splice(index, 1);
-  shedCount++;
-  score += 2;
   if (!quiet) spawnParticles(wx, wy, ORB_COLORS[o.pol], 10, 260);
 }
 
