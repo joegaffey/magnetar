@@ -40,6 +40,12 @@
       #status { color: var(--muted); font-size: .88rem; }
       .hud { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; font-variant-numeric: tabular-nums; margin-bottom: 10px; color: var(--muted); font-size: .92rem; }
       .hud b { color: var(--text); }
+      .legend { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; color: var(--muted); font-size: .8rem; margin: 0 0 12px; }
+      .legend span { display: inline-flex; align-items: center; gap: 6px; }
+      .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+      .dot.amber { background: #e0a04a; }
+      .dot.blue { background: #7aa7ff; }
+      .dot.volatile { background: #e0a04a; box-shadow: 0 0 0 2px #ff5a5f; }
       .wrap { position: relative; }
       canvas { display: block; background: #0b0d12; border: 1px solid var(--border); border-radius: 14px; max-width: 100%; height: auto; cursor: crosshair; }
       #overlay {
@@ -70,6 +76,12 @@
       <span>Score <b id="score">0</b></span>
       <span>Input <b id="source">keys</b></span>
       <span>FFB <b id="ffb">—</b></span>
+    </div>
+
+    <div class="legend">
+      <span><i class="dot amber"></i>amber orb → amber pole</span>
+      <span><i class="dot blue"></i>blue orb → blue pole</span>
+      <span><i class="dot volatile"></i>volatile — explodes on contact</span>
     </div>
 
     <div class="wrap">

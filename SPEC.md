@@ -148,9 +148,10 @@ Low hum whose pitch/volume tracks `Mass`; metallic ping on catch; whoosh on shed
 | Constant | Value | Meaning |
 | --- | --- | --- |
 | `BAR_HALF` | 85 | pole distance from centre (px) |
-| `POLE_R` | 52 | catch radius around a pole |
+| `POLE_R` | 24 | contact radius around a pole (orbs visibly touch) |
 | `ATTRACT_R` | 150 | attraction range |
 | `PULL` | 760 | attraction accel at the pole |
+| `REPEL` | 0.2 | opposite-pole push (weak) |
 | `K_TORQUE` / `D_TORQUE` | 170 / 17 | magnet spring / damping |
 | `BASE_I` | 1.0 | base inertia |
 | `ORB_MASS` | 0.11 | inertia added per stuck orb |

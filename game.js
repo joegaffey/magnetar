@@ -15,9 +15,10 @@ const CX = W / 2, CY = H / 2;
 
 // magnet
 const BAR_HALF = 85;
-const POLE_R = 52;
+const POLE_R = 24;             // contact radius around each pole
 const ATTRACT_R = 150;
 const PULL = 760;
+const REPEL = 0.2;             // opposite pole push (weak)
 const K_TORQUE = 170;
 const D_TORQUE = 17;
 const BASE_I = 1.0;
@@ -218,7 +219,7 @@ function step(dt) {
         if (d < ATTRACT_R) {
           const ux = dx / d, uy = dy / d;
           const f = PULL * (1 - d / ATTRACT_R);
-          const sign = (aff === o.pol) ? -1 : 0.7;
+          const sign = (aff === o.pol) ? -1 : REPEL;
           o.vx += ux * f * sign * dt;
           o.vy += uy * f * sign * dt;
         }
