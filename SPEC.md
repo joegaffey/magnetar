@@ -98,6 +98,7 @@ Secondary: **hard capacity** — if `stuck ≥ MAX_STUCK`, the oldest orb is eje
 ### 5.11 Volatile orbs & explosions (experimental, in build)
 - Some orbs are **volatile** (red ring) and detonate on pole/core contact instead of sticking.
 - An explosion applies a radial impulse to nearby orbs, an **angular kick to the magnet**, and damages the core if close.
+- A volatile orb hitting the **centre** triggers a **larger explosion** (1.8× radius/force/particles) and **3× core damage** (36) plus the blast damage.
 - Goal: make slinging/repelled orbs kinetic — chain reactions are desirable.
 
 ### 5.12 Future mechanics (candidate)
@@ -166,7 +167,7 @@ Low hum whose pitch/volume tracks `Mass`; metallic ping on catch; whoosh on shed
 | `SHED_ACCEL` | 5200 | centrifugal detach threshold (`ω²·r`) |
 | `SHED_INTERVAL` | 0.12 s | min time between shed orbs |
 | `CORE_R` | 20 | core radius |
-| `CORE_PULL` | 110 | core gravity-well acceleration on free orbs |
+| `CORE_PULL` | 180 | core gravity-well acceleration on free orbs |
 | `MAX_ORB_SPEED` | 320 px/s | free-orb speed cap |
 | Health / hit | 100 / 12 | core durability |
 | Spawn | 1.6 → 0.45 s | interval over time |
@@ -186,7 +187,7 @@ Low hum whose pitch/volume tracks `Mass`; metallic ping on catch; whoosh on shed
 | `EXPLOSION_R` | 95 px | blast radius |
 | `EXPLOSION_FORCE` | 850 | radial impulse |
 | `EXPLOSION_TORQUE` | 5 rad/s | angular kick to the magnet |
-| `EXPLOSION_DAMAGE` | 7 | core damage if close |
+| `EXPLOSION_DAMAGE` | 21 | core damage if the blast is close (3×) |
 
 Tuning goals: ~30–45 s to first "heavy" feel; shedding should be attainable in one committed spin; no death spiral.
 

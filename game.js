@@ -42,7 +42,7 @@ const MAX_STUCK = 14;
 const SHED_ACCEL = 5200;       // w^2 * r threshold for centrifugal shed
 const SHED_INTERVAL = 0.12;    // seconds between shed orbs
 const CORE_R = 20;
-const CORE_PULL = 110;         // acceleration of free orbs toward the core
+const CORE_PULL = 180;         // acceleration of free orbs toward the core
 const MAX_ORB_SPEED = 320;
 const FFB_DEADZONE = 0.05;
 
@@ -61,7 +61,7 @@ const VOLATILE_CHANCE = 0.18;
 const EXPLOSION_R = 95;
 const EXPLOSION_FORCE = 850;
 const EXPLOSION_TORQUE = 5;
-const EXPLOSION_DAMAGE = 7;
+const EXPLOSION_DAMAGE = 21;
 
 const input = new SteeringInput({ keyRate: 540, mouseRange: 540 });
 
@@ -176,22 +176,25 @@ function spawnOrb() {
   });
 }
 
-function explode(x, y) {
-  explosions.push({ x, y, life: 0.45, max: 0.45 });
-  spawnParticles(x, y, '#fff2d0', 12, 560, 0.8);
-  spawnParticles(x, y, '#ffb070', 20, 480, 1.2);
-  spawnParticles(x, y, '#ff5a5f', 16, 360, 1);
+function explode(x, y, big = false) {
+  const scale = big ? 1.8 : 1;
+  explosions.push({ x, y, life: 0.45, max: 0.45, scale });
+  const n = Math.max(1, Math.round(scale));
+  spawnParticles(x, y, '#fff2d0', 12 * n, 560, 0.8);
+  spawnParticles(x, y, '#ffb070', 20 * n, 480, 1.2);
+  spawnParticles(x, y, '#ff5a5f', 16 * n, 360, 1);
+  const R = EXPLOSION_R * scale;
   for (const o of orbs) {
     const dx = o.x - x, dy = o.y - y;
     const d = Math.hypot(dx, dy);
-    if (d < EXPLOSION_R && d > 0.001) {
-      const f = EXPLOSION_FORCE * (1 - d / EXPLOSION_R);
+    if (d < R && d > 0.001) {
+      const f = EXPLOSION_FORCE * (1 - d / R);
       o.vx += (dx / d) * f;
       o.vy += (dy / d) * f;
     }
   }
-  magnet.omega += (x >= CX ? 1 : -1) * EXPLOSION_TORQUE;
-  if (Math.hypot(x - CX, y - CY) < EXPLOSION_R * 0.6) health -= EXPLOSION_DAMAGE;
+  magnet.omega += (x >= CX ? 1 : -1) * EXPLOSION_TORQUE * scale;
+  if (Math.hypot(x - CX, y - CY) < R * 0.6) health -= EXPLOSION_DAMAGE;
   exploded++;
 }
 
@@ -354,8 +357,13 @@ function step(dt) {
     }
 
     if (Math.hypot(o.x - CX, o.y - CY) < CORE_R + o.r) {
-      if (o.volatile && !o.shed) explode(o.x, o.y);
-      if (!o.shed) { health -= 12; spawnParticles(o.x, o.y, '#ff5a5f', 14, 240); }
+      if (o.volatile && !o.shed) {
+        explode(o.x, o.y, true);
+        health -= 36;
+      } else if (!o.shed) {
+        health -= 12;
+        spawnParticles(o.x, o.y, '#ff5a5f', 14, 240);
+      }
       orbs.splice(i, 1);
       if (health <= 0) { gameOver(); return; }
       continue;
@@ -566,7 +574,7 @@ function render() {
   for (const e of explosions) {
     const tt = 1 - e.life / e.max;
     const fade = e.life / e.max;
-    const r = EXPLOSION_R * (0.35 + 0.65 * tt);
+    const r = EXPLOSION_R * (e.scale || 1) * (0.35 + 0.65 * tt);
     drawGlow(e.x, e.y, r * 1.5, '#ffb070', 0.5 * fade * fade);
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
