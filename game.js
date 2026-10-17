@@ -51,7 +51,7 @@ const FFB_DEADZONE = 0.05;
 const POLARITY = true;
 const ORB_SIZE = 8;            // render radius while stuck
 const ABSORB_TIME = 4.0;       // seconds for a stuck orb to be absorbed
-const HEAL_PER_ORB = 2.0;      // total health restored per absorbed orb
+const HEAL_PER_ORB = 4.0;      // total health restored per absorbed orb
 
 // overload
 const OVERLOAD_MASS = 3.0;
@@ -62,7 +62,7 @@ const VOLATILE_CHANCE = 0.18;
 const EXPLOSION_R = 95;
 const EXPLOSION_FORCE = 850;
 const EXPLOSION_TORQUE = 5;
-const EXPLOSION_DAMAGE = 21;
+const EXPLOSION_DAMAGE = 12;
 
 const input = new SteeringInput({ keyRate: 540, mouseRange: 540 });
 
@@ -362,9 +362,9 @@ function step(dt) {
     if (Math.hypot(o.x - CX, o.y - CY) < CORE_R + o.r) {
       if (o.volatile && !o.shed) {
         explode(o.x, o.y, true);
-        health -= 36;
+        health -= 24;
       } else if (!o.shed) {
-        health -= 12;
+        health -= 8;
         spawnParticles(o.x, o.y, '#ff5a5f', 14, 240);
       }
       orbs.splice(i, 1);

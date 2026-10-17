@@ -99,7 +99,7 @@ Secondary: **hard capacity** — if `stuck ≥ MAX_STUCK`, the oldest orb is eje
 ### 5.11 Volatile orbs & explosions (experimental, in build)
 - Some orbs are **volatile** (red ring) and detonate on pole/core contact instead of sticking.
 - An explosion applies a radial impulse to nearby orbs, an **angular kick to the magnet**, and damages the core if close.
-- A volatile orb hitting the **centre** triggers a **larger explosion** (1.8× radius/force/particles) and **3× core damage** (36) plus the blast damage.
+- A volatile orb hitting the **centre** triggers a **larger explosion** (1.8× radius/force/particles) and **3× core damage** (24) plus the blast damage.
 - Goal: make slinging/repelled orbs kinetic — chain reactions are desirable.
 
 ### 5.12 Future mechanics (candidate)
@@ -182,14 +182,14 @@ Low hum whose pitch/volume tracks `Mass`; metallic ping on catch; whoosh on shed
 | `POLARITY` | true | poles attract their colour, repel the other |
 | `ORB_SIZE` | 8 px | stuck orb render radius |
 | `ABSORB_TIME` | 4.0 s | time for a stuck orb to be fully absorbed |
-| `HEAL_PER_ORB` | 2.0 | health restored per absorbed orb |
+| `HEAL_PER_ORB` | 4.0 | health restored per absorbed orb |
 | `OVERLOAD_MASS` | 3.0 | overheat threshold (inertia) |
 | `OVERHEAT_VENT` | 3.0 s | continuous overheat before venting |
 | `VOLATILE_CHANCE` | 0.18 | fraction of orbs that are volatile |
 | `EXPLOSION_R` | 95 px | blast radius |
 | `EXPLOSION_FORCE` | 850 | radial impulse |
 | `EXPLOSION_TORQUE` | 5 rad/s | angular kick to the magnet |
-| `EXPLOSION_DAMAGE` | 21 | core damage if the blast is close (3×) |
+| `EXPLOSION_DAMAGE` | 12 | core damage if the blast is close |
 
 Tuning goals: ~30–45 s to first "heavy" feel; shedding should be attainable in one committed spin; no death spiral.
 
