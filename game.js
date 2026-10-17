@@ -36,7 +36,7 @@ window.addEventListener('resize', resize);
 // magnet
 const BAR_HALF = 85;
 const POLE_R = 22;             // surface-contact catch radius
-const MAGNET_R = 10;           // bar collision half-thickness
+const POLE_BODY_R = 10;        // physical pole radius (orb-like)
 const BOUNCE = 0.75;
 const ATTRACT_R = 150;
 const PULL = 480;
@@ -242,37 +242,32 @@ function catchOrb(orb) {
   joltForce = 0.8;
 }
 
-function collideBar(o) {
-  const p1 = poleWorld(1), p2 = poleWorld(-1);
-  const ax = p2.x - p1.x, ay = p2.y - p1.y;
-  const len2 = ax * ax + ay * ay || 1;
-  let t = ((o.x - p1.x) * ax + (o.y - p1.y) * ay) / len2;
-  t = clamp(t, 0, 1);
-  const cx = p1.x + ax * t, cy = p1.y + ay * t;
-  let dx = o.x - cx, dy = o.y - cy;
-  let d = Math.hypot(dx, dy);
-  const R = MAGNET_R + o.r;
-  if (d >= R) return false;
+function collidePoles(o) {
+  let hit = false;
+  for (const sign of [1, -1]) {
+    const p = poleWorld(sign);
+    let dx = o.x - p.x, dy = o.y - p.y;
+    let d = Math.hypot(dx, dy);
+    const R = POLE_BODY_R + o.r;
+    if (d >= R) continue;
+    if (d < 0.001) { dx = 1; dy = 0; d = 0.001; }
+    const nx = dx / d, ny = dy / d;
 
-  if (d < 0.001) {
-    const inv = 1 / (Math.hypot(ax, ay) || 1);
-    dx = -ay * inv; dy = ax * inv; d = 0.001;
+    o.x = p.x + nx * R;
+    o.y = p.y + ny * R;
+    const vn = o.vx * nx + o.vy * ny;
+    if (vn < 0) {
+      o.vx -= (1 + BOUNCE) * vn * nx;
+      o.vy -= (1 + BOUNCE) * vn * ny;
+      const impact = -vn;
+      jolt = Math.min(0.12, 0.03 + impact / 1400);
+      joltDir = Math.sign(nx) || 1;
+      joltForce = clamp(0.25 + impact / 1200, 0.25, 0.7);
+      spawnParticles(p.x + nx * POLE_BODY_R, p.y + ny * POLE_BODY_R, '#cfe0ff', 6, 160);
+    }
+    hit = true;
   }
-  const nx = dx / d, ny = dy / d;
-
-  o.x = cx + nx * R;
-  o.y = cy + ny * R;
-  const vn = o.vx * nx + o.vy * ny;
-  if (vn < 0) {
-    o.vx -= (1 + BOUNCE) * vn * nx;
-    o.vy -= (1 + BOUNCE) * vn * ny;
-    const impact = -vn;
-    jolt = Math.min(0.12, 0.03 + impact / 1400);
-    joltDir = Math.sign(nx) || 1;
-    joltForce = clamp(0.25 + impact / 1200, 0.25, 0.7);
-    spawnParticles(cx + nx * MAGNET_R, cy + ny * MAGNET_R, '#cfe0ff', 6, 160);
-  }
-  return true;
+  return hit;
 }
 
 function shedOne(index, quiet) {
@@ -423,7 +418,7 @@ function step(dt) {
         }
       }
       if (didCatch) continue;
-      if (collideBar(o)) continue;
+      if (collidePoles(o)) continue;
     }
 
     if (Math.hypot(o.x - CX, o.y - CY) < CORE_R + o.r) {
