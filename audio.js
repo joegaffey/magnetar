@@ -246,7 +246,7 @@ export class AudioEngine {
     if (!this.ambient) return;
     const t = this.ctx.currentTime;
     const r = Math.max(0, Math.min(1, rate));
-    this.ambient.tf.frequency.setTargetAtTime(420 + r * 1500, t, 0.12);
-    this.ambient.tg.gain.setTargetAtTime(0.0001 + r * 0.05, t, 0.12);
+    this.ambient.tf.frequency.setTargetAtTime(280 + r * 1200, t, 0.12);
+    this.ambient.tg.gain.setTargetAtTime(0.0001 + r * 0.03, t, 0.12);
   }
 }
