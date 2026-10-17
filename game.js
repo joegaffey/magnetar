@@ -15,28 +15,29 @@ const CX = W / 2, CY = H / 2;
 
 // magnet
 const BAR_HALF = 85;
-const POLE_R = 24;             // contact radius around each pole
+const POLE_R = 22;             // surface-contact catch radius
 const ATTRACT_R = 150;
 const PULL = 760;
-const REPEL = 0.2;             // opposite pole push (weak)
+const REPEL = 0.2;
 const K_TORQUE = 170;
 const D_TORQUE = 17;
 const BASE_I = 1.0;
 const ORB_MASS = 0.11;
 const MAX_STUCK = 14;
-const SHED_OMEGA = 7.0;
+const SHED_ACCEL = 5200;       // w^2 * r threshold for centrifugal shed
+const SHED_INTERVAL = 0.12;    // seconds between shed orbs
 const CORE_R = 20;
 const FFB_DEADZONE = 0.05;
 
 // polarity / absorption
-const POLARITY = true;         // poles attract their colour, repel the other
-const CORE_REGEN = 1.2;        // health per absorbed orb
+const POLARITY = true;
+const CORE_REGEN = 1.2;
 
 // overload
-const OVERLOAD_MASS = 3.0;     // above this the magnet overheats (no attraction)
-const OVERHEAT_VENT = 3.0;     // seconds of continuous overheat before it vents
+const OVERLOAD_MASS = 3.0;
+const OVERHEAT_VENT = 3.0;
 
-// volatile orbs
+// volatile
 const VOLATILE_CHANCE = 0.18;
 const EXPLOSION_R = 95;
 const EXPLOSION_FORCE = 850;
@@ -46,24 +47,61 @@ const EXPLOSION_DAMAGE = 7;
 const input = new SteeringInput({ keyRate: 540, mouseRange: 540 });
 
 let magnet = { phi: 0, omega: 0 };
-let stuck = [];          // { lx, ly, mass, pol }
-let orbs = [];           // { x, y, vx, vy, r, pol, volatile, shed }
-let explosions = [];     // { x, y, life, max }
+let stuck = [];
+let orbs = [];
+let explosions = [];
+let particles = [];
 let health = 100, score = 0, caught = 0, shedCount = 0, exploded = 0;
 let difficulty = 0, spawnTimer = 1.0, spawnEvery = 1.6;
 let running = false, over = false;
-let overheatTime = 0;
+let overheatTime = 0, shedCooldown = 0;
 let jolt = 0, joltDir = 0;
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const TAU = Math.PI * 2;
+const rand = (a, b) => a + Math.random() * (b - a);
+
+// pre-rendered glow sprites (cheap neon bloom)
+const glowCache = new Map();
+function glowSprite(color) {
+  if (glowCache.has(color)) return glowCache.get(color);
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grd.addColorStop(0, color);
+  grd.addColorStop(0.35, color);
+  grd.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = grd;
+  g.fillRect(0, 0, 64, 64);
+  glowCache.set(color, c);
+  return c;
+}
+
+function drawGlow(x, y, radius, color, alpha = 1) {
+  const s = glowSprite(color);
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = alpha;
+  ctx.drawImage(s, x - radius, y - radius, radius * 2, radius * 2);
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function spawnParticles(x, y, color, n, speed) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * TAU;
+    const s = speed * rand(0.2, 1);
+    const life = rand(0.25, 0.6);
+    particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life, max: life, color, size: rand(1.5, 3) });
+  }
+}
 
 function reset() {
   magnet = { phi: 0, omega: 0 };
-  stuck = []; orbs = []; explosions = [];
+  stuck = []; orbs = []; explosions = []; particles = [];
   health = 100; score = 0; caught = 0; shedCount = 0; exploded = 0;
   difficulty = 0; spawnTimer = 0.9; spawnEvery = 1.6;
-  running = true; over = false; overheatTime = 0; jolt = 0;
+  running = true; over = false; overheatTime = 0; shedCooldown = 0; jolt = 0;
   input.angle = 0;
   overlay.classList.add('hidden');
   syncHud();
@@ -72,10 +110,7 @@ function reset() {
 function inertia() {
   return BASE_I + stuck.reduce((a, o) => a + o.mass, 0);
 }
-
-function overheated() {
-  return inertia() > OVERLOAD_MASS;
-}
+function overheated() { return inertia() > OVERLOAD_MASS; }
 
 function syncHud() {
   healthEl.textContent = Math.max(0, Math.round(health));
@@ -98,7 +133,6 @@ function poleWorld(sign) {
   return { x: CX + Math.cos(ang) * BAR_HALF * sign, y: CY + Math.sin(ang) * BAR_HALF * sign };
 }
 
-// pole at +BAR_HALF attracts pol 0 (amber); -BAR_HALF attracts pol 1 (blue)
 const poles = () => [
   { p: poleWorld(1), aff: 0 },
   { p: poleWorld(-1), aff: 1 }
@@ -121,7 +155,8 @@ function spawnOrb() {
 }
 
 function explode(x, y) {
-  explosions.push({ x, y, life: 0.35, max: 0.35 });
+  explosions.push({ x, y, life: 0.4, max: 0.4 });
+  spawnParticles(x, y, '#ff7a5a', 34, 520);
   for (const o of orbs) {
     const dx = o.x - x, dy = o.y - y;
     const d = Math.hypot(dx, dy);
@@ -138,18 +173,19 @@ function explode(x, y) {
 
 function catchOrb(orb) {
   if (orb.volatile) { explode(orb.x, orb.y); return; }
-  if (stuck.length >= MAX_STUCK) shedOne(0);
+  if (stuck.length >= MAX_STUCK) shedOne(0, true);
   const dx = orb.x - CX, dy = orb.y - CY;
   const c = Math.cos(-magnet.phi), s = Math.sin(-magnet.phi);
   stuck.push({ lx: dx * c - dy * s, ly: dx * s + dy * c, mass: ORB_MASS, pol: orb.pol });
   caught++;
   score += 1;
   health = Math.min(100, health + CORE_REGEN);
+  spawnParticles(orb.x, orb.y, ORB_COLORS[orb.pol], 12, 220);
   jolt = 0.09;
   joltDir = Math.sign(orb.x - CX) || 1;
 }
 
-function shedOne(index) {
+function shedOne(index, quiet) {
   const o = stuck[index];
   if (!o) return;
   const c = Math.cos(magnet.phi), s = Math.sin(magnet.phi);
@@ -161,21 +197,18 @@ function shedOne(index) {
   const ty = magnet.omega * rx;
   orbs.push({
     x: wx, y: wy,
-    vx: tx * 30 + (rx / len) * 380,
-    vy: ty * 30 + (ry / len) * 380,
-    r: 11,
-    pol: o.pol,
-    volatile: false,
-    shed: true
+    vx: tx * 18 + (rx / len) * 200,
+    vy: ty * 18 + (ry / len) * 200,
+    r: 11, pol: o.pol, volatile: false, shed: true
   });
   stuck.splice(index, 1);
   shedCount++;
   score += 2;
+  if (!quiet) spawnParticles(wx, wy, ORB_COLORS[o.pol], 10, 260);
 }
 
 function vent() {
-  // overheat failure: blow every stuck orb off in a burst
-  for (let i = stuck.length - 1; i >= 0; i--) shedOne(i);
+  for (let i = stuck.length - 1; i >= 0; i--) shedOne(i, true);
   explode(CX, CY);
   overheatTime = 0;
 }
@@ -184,8 +217,8 @@ function step(dt) {
   input.update(dt);
   if (!running) return;
 
-  const over = overheated();
-  if (over) {
+  const isOver = overheated();
+  if (isOver) {
     overheatTime += dt;
     if (overheatTime > OVERHEAT_VENT) vent();
   } else {
@@ -198,8 +231,18 @@ function step(dt) {
   magnet.omega += (torque / I) * dt;
   magnet.phi += magnet.omega * dt;
 
-  if (Math.abs(magnet.omega) > SHED_OMEGA && stuck.length) {
-    for (let i = stuck.length - 1; i >= 0; i--) shedOne(i);
+  // --- gradual centrifugal shedding ---
+  shedCooldown -= dt;
+  if (stuck.length && shedCooldown <= 0) {
+    let best = -1, bestR = 0;
+    for (let i = 0; i < stuck.length; i++) {
+      const r = Math.hypot(stuck[i].lx, stuck[i].ly);
+      if (magnet.omega * magnet.omega * r > SHED_ACCEL && r > bestR) { best = i; bestR = r; }
+    }
+    if (best >= 0) {
+      shedOne(best);
+      shedCooldown = SHED_INTERVAL;
+    }
   }
 
   difficulty += dt;
@@ -212,7 +255,7 @@ function step(dt) {
   for (let i = orbs.length - 1; i >= 0; i--) {
     const o = orbs[i];
 
-    if (!o.shed && !over) {
+    if (!o.shed && !isOver) {
       for (const { p, aff } of ps) {
         const dx = o.x - p.x, dy = o.y - p.y;
         const d = Math.hypot(dx, dy) || 0.001;
@@ -230,21 +273,21 @@ function step(dt) {
     o.y += o.vy * dt;
 
     if (!o.shed) {
-      let caught = false;
+      let didCatch = false;
       for (const { p, aff } of ps) {
         if (aff === o.pol && Math.hypot(o.x - p.x, o.y - p.y) < POLE_R) {
           catchOrb(o);
           orbs.splice(i, 1);
-          caught = true;
+          didCatch = true;
           break;
         }
       }
-      if (caught) continue;
+      if (didCatch) continue;
     }
 
     if (Math.hypot(o.x - CX, o.y - CY) < CORE_R + o.r) {
       if (o.volatile && !o.shed) explode(o.x, o.y);
-      if (!o.shed) health -= 12;
+      if (!o.shed) { health -= 12; spawnParticles(o.x, o.y, '#ff5a5f', 14, 240); }
       orbs.splice(i, 1);
       if (health <= 0) { gameOver(); return; }
       continue;
@@ -256,6 +299,13 @@ function step(dt) {
   for (let i = explosions.length - 1; i >= 0; i--) {
     explosions[i].life -= dt;
     if (explosions[i].life <= 0) explosions.splice(i, 1);
+  }
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    p.vx *= 0.97; p.vy *= 0.97;
+    p.life -= dt;
+    if (p.life <= 0) particles.splice(i, 1);
   }
 
   syncHud();
@@ -292,56 +342,67 @@ function updateFfb(dt) {
 const ORB_COLORS = ['#e0a04a', '#7aa7ff'];
 
 function render() {
-  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#05060a';
+  ctx.fillRect(0, 0, W, H);
 
-  const over = overheated();
+  // faint grid
+  ctx.strokeStyle = 'rgba(40, 60, 100, 0.18)';
+  ctx.lineWidth = 1;
+  const grid = 48;
+  const ox = (CX % grid), oy = (CY % grid);
+  for (let x = ox; x < W; x += grid) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = oy; y < H; y += grid) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+
+  const isOver = overheated();
   const hp = clamp(health / 100, 0, 1);
+  const coreColor = hp > 0.5 ? '#57d38c' : (hp > 0.25 ? '#e0a04a' : '#ff5a5f');
 
-  // core
-  ctx.beginPath(); ctx.arc(CX, CY, CORE_R + 8, 0, TAU);
-  ctx.strokeStyle = '#2a3140'; ctx.lineWidth = 6; ctx.stroke();
+  // core glow + ring
+  drawGlow(CX, CY, CORE_R * 3.2, coreColor, 0.5);
   ctx.beginPath(); ctx.arc(CX, CY, CORE_R + 8, -Math.PI / 2, -Math.PI / 2 + TAU * hp);
-  ctx.strokeStyle = hp > 0.5 ? '#57d38c' : (hp > 0.25 ? '#e0a04a' : '#ff5a5f'); ctx.stroke();
+  ctx.strokeStyle = coreColor; ctx.lineWidth = 5; ctx.stroke();
   ctx.beginPath(); ctx.arc(CX, CY, CORE_R, 0, TAU);
-  ctx.fillStyle = '#11151c'; ctx.fill();
+  ctx.fillStyle = '#05060a'; ctx.fill();
 
-  // orbs
+  // orbs (glow + core)
   for (const o of orbs) {
-    ctx.beginPath();
-    ctx.arc(o.x, o.y, o.r, 0, TAU);
-    ctx.fillStyle = o.shed ? '#9dbcff' : ORB_COLORS[o.pol];
-    ctx.fill();
+    const col = o.shed ? '#9dbcff' : ORB_COLORS[o.pol];
+    drawGlow(o.x, o.y, o.r * 3, col, 0.55);
+    ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, TAU);
+    ctx.fillStyle = col; ctx.fill();
     if (o.volatile && !o.shed) {
-      ctx.beginPath();
-      ctx.arc(o.x, o.y, o.r + 4, 0, TAU);
-      ctx.strokeStyle = '#ff5a5f';
-      ctx.lineWidth = 2;
-      ctx.stroke();
+      ctx.beginPath(); ctx.arc(o.x, o.y, o.r + 5, 0, TAU);
+      ctx.strokeStyle = '#ff5a5f'; ctx.lineWidth = 2; ctx.stroke();
     }
   }
 
   // magnet
   const p1 = poleWorld(1), p2 = poleWorld(-1);
-  ctx.strokeStyle = over ? '#ff8a5a' : '#c6cfdf';
-  ctx.lineWidth = 14; ctx.lineCap = 'round';
+  drawGlow(p1.x, p1.y, 42, ORB_COLORS[0], 0.7);
+  drawGlow(p2.x, p2.y, 42, ORB_COLORS[1], 0.7);
+  ctx.strokeStyle = isOver ? '#ff8a5a' : '#c6cfdf';
+  ctx.lineWidth = 12; ctx.lineCap = 'round';
+  ctx.shadowBlur = 18; ctx.shadowColor = isOver ? '#ff5a5f' : '#88aaff';
   ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+  ctx.shadowBlur = 0;
 
-  // poles coloured by what they attract
-  ctx.beginPath(); ctx.arc(p1.x, p1.y, 10, 0, TAU);
-  ctx.fillStyle = ORB_COLORS[0]; ctx.fill();
-  ctx.beginPath(); ctx.arc(p2.x, p2.y, 10, 0, TAU);
-  ctx.fillStyle = ORB_COLORS[1]; ctx.fill();
+  // poles (coloured by what they attract)
+  for (const [p, col] of [[p1, ORB_COLORS[0]], [p2, ORB_COLORS[1]]]) {
+    ctx.beginPath(); ctx.arc(p.x, p.y, 9, 0, TAU);
+    ctx.fillStyle = col; ctx.fill();
+  }
 
   // stuck orbs
   const c = Math.cos(magnet.phi), s = Math.sin(magnet.phi);
   for (const o of stuck) {
     const wx = CX + o.lx * c - o.ly * s;
     const wy = CY + o.lx * s + o.ly * c;
+    drawGlow(wx, wy, 22, ORB_COLORS[o.pol], 0.6);
     ctx.beginPath(); ctx.arc(wx, wy, 8, 0, TAU);
     ctx.fillStyle = ORB_COLORS[o.pol]; ctx.fill();
   }
 
-  // explosions
+  // explosion rings
   for (const e of explosions) {
     const t = 1 - e.life / e.max;
     ctx.beginPath(); ctx.arc(e.x, e.y, EXPLOSION_R * t, 0, TAU);
@@ -349,12 +410,22 @@ function render() {
     ctx.lineWidth = 4; ctx.stroke();
   }
 
-  // overheat warning
-  if (over) {
-    ctx.fillStyle = 'rgba(255, 90, 95, 0.9)';
+  // particles (additive)
+  ctx.globalCompositeOperation = 'lighter';
+  for (const p of particles) {
+    const a = clamp(p.life / p.max, 0, 1);
+    ctx.globalAlpha = a;
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, TAU); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+
+  if (isOver) {
+    ctx.fillStyle = 'rgba(255, 90, 95, 0.95)';
     ctx.font = '700 18px ui-sans-serif, system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('OVERHEAT — knock off orbs', CX, CY - BAR_HALF - 40);
+    ctx.fillText('OVERHEAT — knock off orbs', CX, CY - BAR_HALF - 44);
     ctx.textAlign = 'start';
   }
 }

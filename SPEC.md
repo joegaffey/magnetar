@@ -63,8 +63,7 @@ I = I0 + Σ m_orb
 - Displayed as `Mass` in the HUD.
 
 ### 5.4 Shedding (buttonless detach)
-Primary: **centrifugal** — when `|ω| > SHED_OMEGA`, stuck orbs are released tangentially:
-`v = ω × r` (plus a small outward bias). They become free "shed" orbs (blue) and fly off.
+Primary: **centrifugal (gradual)** — an orb detaches when `ω²·r > SHED_ACCEL` (outermost first), at most one per `SHED_INTERVAL`; released tangentially with a modest outward bias. Spinning no longer clears everything instantly.
 Secondary: **hard capacity** — if `stuck ≥ MAX_STUCK`, the oldest orb is ejected automatically (prevents a dead-end).
 
 ### 5.5 Core & failure
@@ -115,7 +114,7 @@ Secondary: **hard capacity** — if `stuck ≥ MAX_STUCK`, the oldest orb is eje
 
 ## 7. Art style
 
-**Direction:** dark orbital / industrial. Flat vector shapes, high contrast, restrained glow. Think "instrument panel at night", not neon overload.
+**Direction:** Geometry Wars-inspired neon. Near-black background with a faint grid, bright saturated shapes, bloom/glow, and particle bursts on every impact. High contrast, arcade energy.
 
 ### Palette
 | Role | Hex |
@@ -130,15 +129,18 @@ Secondary: **hard capacity** — if `stuck ≥ MAX_STUCK`, the oldest orb is eje
 | Core healthy / warn / crit | `#57d38c` / `#e0a04a` / `#ff5a5f` |
 
 ### Shapes & effects
-- **Magnet:** thick rounded bar + glowing pole caps; faint field arcs emanating from poles, intensity scaled by nearby orbs.
-- **Orbs:** small filled circles with a 1–2 px rim and a short fading motion trail.
-- **Stuck orbs:** clustered on the pole, gentle pulse; subtle jitter at high mass.
-- **Shed:** bright streak + a few particles; brief bloom.
-- **Core:** ring gauge (health), inner dark disc; pulses with HP.
-- **Impacts:** small screen shake + red vignette flash on core hit.
-- **Background:** subtle concentric rings / grid and a slow parallax drift.
-- **Typography:** system UI sans for HUD; uppercase, letter-spaced micro-labels (matches webhid-wheel demo).
-- **Motion:** snappy spring on the magnet; orbs ease; no unnecessary UI animation.
+- **Glow:** pre-rendered radial "bloom" sprites drawn additively behind orbs, poles and the core (cheap neon).
+- **Magnet:** thick rounded bar with a glow; poles coloured by the orb colour they attract (amber / blue).
+- **Orbs:** glowing circles; volatile orbs get a red ring.
+- **Stuck orbs:** clustered on the pole with a glow; gentle pulse.
+- **Catch:** particle burst at the contact point (reads as a real hit).
+- **Shed:** particle burst at release; shed orbs glow pale blue.
+- **Explosion:** expanding ring + large particle burst (additive), angular kick to the magnet.
+- **Core:** glowing ring gauge (health), dark interior.
+- **Background:** near-black with a faint neon grid.
+- **Particles:** short-lived additive dots with drag; each event colour-coded.
+- **Typography:** system UI sans for HUD; uppercase, letter-spaced micro-labels.
+- **Motion:** snappy spring on the magnet; particles ease out; no unnecessary UI animation.
 
 ### Audio (optional, later)
 Low hum whose pitch/volume tracks `Mass`; metallic ping on catch; whoosh on shed; alarm on core hit.
@@ -148,7 +150,7 @@ Low hum whose pitch/volume tracks `Mass`; metallic ping on catch; whoosh on shed
 | Constant | Value | Meaning |
 | --- | --- | --- |
 | `BAR_HALF` | 85 | pole distance from centre (px) |
-| `POLE_R` | 24 | contact radius around a pole (orbs visibly touch) |
+| `POLE_R` | 22 | surface-contact catch radius (orbs visibly touch) |
 | `ATTRACT_R` | 150 | attraction range |
 | `PULL` | 760 | attraction accel at the pole |
 | `REPEL` | 0.2 | opposite-pole push (weak) |
@@ -156,7 +158,8 @@ Low hum whose pitch/volume tracks `Mass`; metallic ping on catch; whoosh on shed
 | `BASE_I` | 1.0 | base inertia |
 | `ORB_MASS` | 0.11 | inertia added per stuck orb |
 | `MAX_STUCK` | 14 | hard capacity |
-| `SHED_OMEGA` | 7.0 rad/s | centrifugal shed threshold |
+| `SHED_ACCEL` | 5200 | centrifugal detach threshold (`ω²·r`) |
+| `SHED_INTERVAL` | 0.12 s | min time between shed orbs |
 | `CORE_R` | 20 | core radius |
 | Health / hit | 100 / 12 | core durability |
 | Spawn | 1.6 → 0.45 s | interval over time |
