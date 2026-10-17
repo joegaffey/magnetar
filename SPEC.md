@@ -53,6 +53,7 @@ I = I0 + Σ m_orb
 
 ### 5.2 Orbs
 - Spawn just off-screen at a random bearing; drift toward the core.
+- A gentle **core gravity well** (`CORE_PULL`) accelerates free orbs toward the centre, speed-capped at `MAX_ORB_SPEED`.
 - Each free orb is pulled toward the **nearest pole** within `ATTRACT_R`:
   `a = PULL · (1 − d/ATTRACT_R)` toward the pole.
 - Contact within `POLE_R` of a pole → **caught** (sticks).
@@ -161,6 +162,8 @@ Low hum whose pitch/volume tracks `Mass`; metallic ping on catch; whoosh on shed
 | `SHED_ACCEL` | 5200 | centrifugal detach threshold (`ω²·r`) |
 | `SHED_INTERVAL` | 0.12 s | min time between shed orbs |
 | `CORE_R` | 20 | core radius |
+| `CORE_PULL` | 110 | core gravity-well acceleration on free orbs |
+| `MAX_ORB_SPEED` | 220 px/s | free-orb speed cap |
 | Health / hit | 100 / 12 | core durability |
 | Spawn | 1.6 → 0.45 s | interval over time |
 | Orb speed | 55 → 205 px/s | over time |
