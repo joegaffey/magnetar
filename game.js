@@ -397,6 +397,23 @@ function render() {
   const isOver = overheated();
   const hp = clamp(health / 100, 0, 1);
   const coreColor = hp > 0.5 ? '#57d38c' : (hp > 0.25 ? '#e0a04a' : '#ff5a5f');
+  const t = performance.now() / 1000;
+
+  // gravity-well backdrop + faint field rings
+  const well = ctx.createRadialGradient(CX, CY, 0, CX, CY, 175);
+  well.addColorStop(0, 'rgba(0, 0, 0, 0.85)');
+  well.addColorStop(0.45, 'rgba(8, 12, 26, 0.45)');
+  well.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = well;
+  ctx.beginPath(); ctx.arc(CX, CY, 175, 0, TAU); ctx.fill();
+
+  ctx.save();
+  ctx.translate(CX, CY);
+  ctx.rotate(t * 0.15);
+  ctx.strokeStyle = 'rgba(110, 150, 255, 0.07)';
+  ctx.lineWidth = 1;
+  for (const r of [74, 108, 142]) { ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.stroke(); }
+  ctx.restore();
 
   // core glow + ring
   drawGlow(CX, CY, CORE_R * 3.2, coreColor, 0.5);
@@ -420,17 +437,42 @@ function render() {
     }
   }
 
-  // magnet
+  // magnet: glowing energy bar (amber -> white -> blue)
   const p1 = poleWorld(1), p2 = poleWorld(-1);
-  drawGlow(p1.x, p1.y, 42, ORB_COLORS[0], 0.7);
-  drawGlow(p2.x, p2.y, 42, ORB_COLORS[1], 0.7);
-  ctx.strokeStyle = isOver ? '#ff8a5a' : '#c6cfdf';
-  ctx.lineWidth = 12; ctx.lineCap = 'round';
-  ctx.shadowBlur = 18; ctx.shadowColor = isOver ? '#ff5a5f' : '#88aaff';
-  ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
-  ctx.shadowBlur = 0;
+  const grad = ctx.createLinearGradient(p1.x, p1.y, p2.x, p2.y);
+  grad.addColorStop(0, '#e0a04a');
+  grad.addColorStop(0.5, '#cfe0ff');
+  grad.addColorStop(1, '#7aa7ff');
 
-  // poles (coloured by what they attract)
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.strokeStyle = isOver ? '#ff8a5a' : grad;
+  ctx.lineWidth = 18 + Math.sin(t * 6) * 2;
+  ctx.lineCap = 'round';
+  ctx.shadowBlur = 28;
+  ctx.shadowColor = isOver ? '#ff5a5f' : '#88aaff';
+  ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+  ctx.restore();
+
+  // bright inner core + travelling energy dashes
+  ctx.strokeStyle = isOver ? '#ffd0b0' : 'rgba(255, 255, 255, 0.92)';
+  ctx.lineWidth = 3.5;
+  ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.setLineDash([6, 22]);
+  ctx.lineDashOffset = -t * 160;
+  ctx.strokeStyle = 'rgba(200, 225, 255, 0.85)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  // pulsing poles
+  const polePulse = 1 + Math.sin(t * 5) * 0.12;
+  drawGlow(p1.x, p1.y, 46 * polePulse, ORB_COLORS[0], 0.85);
+  drawGlow(p2.x, p2.y, 46 * polePulse, ORB_COLORS[1], 0.85);
   for (const [p, col] of [[p1, ORB_COLORS[0]], [p2, ORB_COLORS[1]]]) {
     ctx.beginPath(); ctx.arc(p.x, p.y, 9, 0, TAU);
     ctx.fillStyle = col; ctx.fill();
