@@ -66,7 +66,7 @@ I = I0 + Σ m_orb
 - Displayed as `Mass` in the HUD.
 
 ### 5.4 Shedding (buttonless detach)
-Primary: **centrifugal (gradual)** — an orb detaches when `ω²·r > SHED_ACCEL` (outermost first), at most one per `SHED_INTERVAL`; released tangentially with a modest outward bias. Spinning no longer clears everything instantly.
+Primary: **centrifugal (gradual)** — an orb detaches when `ω²·r > SHED_ACCEL` **and the pole is moving away from it** at that speed (outermost first), at most one per `SHED_INTERVAL`; released tangentially with a modest outward bias. A detached orb has a short no-catch window (0.25 s) so it cannot instantly reattach. Spinning no longer clears everything instantly.
 Secondary: **hard capacity** — if `stuck ≥ MAX_STUCK`, the oldest orb is ejected automatically (prevents a dead-end).
 A detached orb becomes an ordinary free orb again: it keeps its polarity colour and can be re-caught. Its remaining energy (`size / ORB_SIZE`) scales its radius and the core damage it deals.
 

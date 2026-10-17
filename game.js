@@ -194,7 +194,7 @@ function spawnOrb() {
     r: 12,
     pol: Math.random() < 0.5 ? 0 : 1,
     volatile: Math.random() < VOLATILE_CHANCE,
-    energy: 1
+    energy: 1, noCatch: 0
   });
 }
 
@@ -307,7 +307,7 @@ function shedOne(index, quiet) {
   orbs.push({
     x: wx, y: wy, vx, vy,
     r: 6 + 6 * energy,
-    pol: o.pol, volatile: false, energy
+    pol: o.pol, volatile: false, energy, noCatch: 0.25
   });
   stuck.splice(index, 1);
   if (!quiet) {
@@ -356,7 +356,7 @@ function step(dt) {
     let best = -1, bestR = 0;
     for (let i = 0; i < stuck.length; i++) {
       const r = Math.hypot(stuck[i].lx, stuck[i].ly);
-      if (magnet.omega * magnet.omega * r > SHED_ACCEL && r > bestR) { best = i; bestR = r; }
+      if (magnet.omega * magnet.omega * r > SHED_ACCEL && r > bestR && movingAway(stuck[i])) { best = i; bestR = r; }
     }
     if (best >= 0) {
       shedOne(best);
@@ -373,6 +373,7 @@ function step(dt) {
 
   for (let i = orbs.length - 1; i >= 0; i--) {
     const o = orbs[i];
+    if (o.noCatch > 0) o.noCatch -= dt;
 
     if (!isOver) {
       for (const { p, aff } of ps) {
@@ -421,7 +422,7 @@ function step(dt) {
 
     let didCatch = false;
     for (const { p, aff } of ps) {
-      if (aff === o.pol && Math.hypot(o.x - p.x, o.y - p.y) < POLE_R) {
+      if (aff === o.pol && o.noCatch <= 0 && Math.hypot(o.x - p.x, o.y - p.y) < POLE_R) {
         catchOrb(o);
         orbs.splice(i, 1);
         didCatch = true;
@@ -551,6 +552,17 @@ function spawnStream() {
 function nearestPole(x, y) {
   const p1 = poleWorld(1), p2 = poleWorld(-1);
   return Math.hypot(x - p1.x, y - p1.y) <= Math.hypot(x - p2.x, y - p2.y) ? p1 : p2;
+}
+
+function movingAway(o) {
+  const c = Math.cos(magnet.phi), s = Math.sin(magnet.phi);
+  const wx = CX + o.lx * c - o.ly * s;
+  const wy = CY + o.lx * s + o.ly * c;
+  const pole = nearestPole(wx, wy);
+  const rx = wx - CX, ry = wy - CY;
+  const vx = -magnet.omega * ry;
+  const vy = magnet.omega * rx;
+  return vx * (wx - pole.x) + vy * (wy - pole.y) > 0;
 }
 
 function spawnEnergyToPole(x, y, pole, pol) {
