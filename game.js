@@ -330,6 +330,16 @@ function step(dt) {
     o.x += o.vx * dt;
     o.y += o.vy * dt;
 
+    if (o.volatile && !o.shed && Math.random() < dt * 18) {
+      const life = 0.25 + Math.random() * 0.25;
+      particles.push({
+        x: o.x, y: o.y,
+        vx: -o.vx * 0.15 + (Math.random() - 0.5) * 30,
+        vy: -o.vy * 0.15 + (Math.random() - 0.5) * 30,
+        life, max: life, color: '#ff7a5a', size: 1 + Math.random() * 1.5
+      });
+    }
+
     if (!o.shed) {
       let didCatch = false;
       for (const { p, aff } of ps) {
@@ -522,8 +532,13 @@ function render() {
     ctx.fillStyle = col; ctx.fill();
     ctx.globalAlpha = 1;
     if (o.volatile && !o.shed) {
-      ctx.beginPath(); ctx.arc(o.x, o.y, o.r + 5, 0, TAU);
-      ctx.strokeStyle = '#ff5a5f'; ctx.lineWidth = 2; ctx.stroke();
+      const pulse = 0.5 + 0.5 * Math.sin(t * 10 + o.x * 0.05);
+      drawGlow(o.x, o.y, o.r * 4.5, '#ff5a5f', 0.3 + 0.35 * pulse);
+      ctx.beginPath(); ctx.arc(o.x, o.y, o.r + 6 + pulse * 3, 0, TAU);
+      ctx.strokeStyle = 'rgba(255, 90, 95, ' + (0.55 + 0.4 * pulse) + ')';
+      ctx.lineWidth = 2.5; ctx.stroke();
+      ctx.beginPath(); ctx.arc(o.x, o.y, o.r * 0.42, 0, TAU);
+      ctx.fillStyle = '#fff2d0'; ctx.fill();
     }
   }
 
