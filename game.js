@@ -87,6 +87,7 @@ let orbs = [];
 let explosions = [];
 let particles = [];
 let health = 100, score = 0, caught = 0, exploded = 0;
+let streak = 0;
 let difficulty = 0, spawnTimer = 1.0, spawnEvery = 1.6;
 let running = false, over = false;
 let overheatTime = 0, shedCooldown = 0;
@@ -136,7 +137,7 @@ function spawnParticles(x, y, color, n, speed, sizeScale = 1) {
 function reset() {
   magnet = { phi: 0, omega: 0 };
   stuck = []; orbs = []; explosions = []; particles = []; streams = []; streamTimer = 0;
-  health = 100; score = 0; caught = 0; exploded = 0;
+  health = 100; score = 0; caught = 0; exploded = 0; streak = 0;
   difficulty = 0; spawnTimer = 0.9; spawnEvery = 1.6;
   running = true; over = false; overheatTime = 0; shedCooldown = 0; jolt = 0; joltForce = 0;
   input.angle = 0;
@@ -229,6 +230,8 @@ function powerBurst(x, y, pol) {
   health = Math.min(100, health + HEAL_PER_ORB * 3);
   audio.burst(panOf(x));
   score += 1;
+  streak++;
+  audio.score(panOf(x), streak);
   exploded++;
   explosions.push({ x, y, life: 0.45, max: 0.45, scale: 1.2 });
   spawnParticles(x, y, '#fff2d0', 14, 520, 0.8);
@@ -256,6 +259,8 @@ function catchOrb(orb) {
   stuck.push({ lx: dx * c - dy * s, ly: dx * s + dy * c, mass: ORB_MASS * energy, pol: orb.pol, size: ORB_SIZE * energy });
   caught++;
   score += 1;
+  streak++;
+  audio.score(panOf(orb.x), streak);
   spawnParticles(orb.x, orb.y, ORB_COLORS[orb.pol], 12, 220);
   audio.catch(panOf(orb.x));
   jolt = 0.09;
@@ -286,6 +291,7 @@ function collidePoles(o) {
       joltForce = clamp(0.25 + impact / 1200, 0.25, 0.7);
       spawnParticles(p.x + nx * POLE_BODY_R, p.y + ny * POLE_BODY_R, '#cfe0ff', 6, 160);
       audio.thunk(panOf(p.x), clamp(impact / 300, 0.3, 1.2));
+      audio.hit(panOf(p.x), clamp(impact / 400, 0.4, 1));
     }
     hit = true;
   }
@@ -437,6 +443,8 @@ function step(dt) {
     if (collidePoles(o)) continue;
 
     if (Math.hypot(o.x - CX, o.y - CY) < CORE_R + o.r) {
+      streak = 0;
+      audio.hit(panOf(o.x), 1.3);
       if (o.volatile) {
         explode(o.x, o.y, true);
         health -= 24;

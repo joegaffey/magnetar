@@ -176,6 +176,18 @@ export class AudioEngine {
     this.thunk(pan, 0.8);
   }
 
+  score(pan = 0, streak = 0) {
+    const base = 880 + Math.min(streak, 12) * 70;
+    this._tone(base, { type: 'triangle', dur: 0.1, gain: 0.1, pan, glide: base * 1.03, attack: 0.003 });
+    this._tone(base * 1.5, { type: 'sine', dur: 0.16, gain: 0.06, pan, glide: base * 1.5, attack: 0.003 });
+  }
+
+  hit(pan = 0, strength = 1) {
+    const g = Math.min(1, strength);
+    this._tone(2100 + Math.random() * 700, { type: 'triangle', dur: 0.06, gain: 0.06 * g, pan });
+    this._noise({ dur: 0.04, gain: 0.05 * g, pan, freq: 4200, q: 1.2, type: 'bandpass' });
+  }
+
   thunk(pan = 0, strength = 1) {
     const g = Math.min(0.55, 0.34 * strength);
     this._tone(140, { type: 'sine', dur: 0.22, gain: g, pan, glide: 55, attack: 0.004 });
