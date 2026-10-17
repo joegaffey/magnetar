@@ -21,11 +21,12 @@
       canvas { position: fixed; inset: 0; display: block; touch-action: none; }
 
       .ui { position: fixed; z-index: 10; }
-      .hud { top: 12px; left: 14px; display: flex; gap: 16px; flex-wrap: wrap; font-variant-numeric: tabular-nums; font-size: .88rem; color: var(--muted); }
+      .topui { top: 12px; left: 14px; right: 14px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; pointer-events: none; }
+      .hud { display: flex; gap: 16px; flex-wrap: wrap; font-variant-numeric: tabular-nums; font-size: .88rem; color: var(--muted); }
       .hud b { color: var(--text); }
       .hud .brand { color: var(--accent-2); font-weight: 800; letter-spacing: .12em; }
 
-      .topbar { top: 12px; right: 14px; display: flex; gap: 10px; align-items: center; }
+      .topbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end; pointer-events: auto; }
       button {
         appearance: none; border: 0; cursor: pointer;
         background: linear-gradient(180deg, var(--accent-2), var(--accent));
@@ -60,33 +61,37 @@
       .hidden { display: none !important; }
 
       @media (max-width: 860px) {
-        .topbar { top: 8px; left: 8px; right: 8px; justify-content: center; }
+        .topui { flex-direction: column-reverse; align-items: center; gap: 8px; }
+        .topbar { justify-content: center; }
+        .topbar button { padding: 7px 14px; font-size: .8rem; }
         #status { display: none; }
-        .hud { top: 54px; left: 8px; right: 8px; justify-content: center; gap: 6px 14px; font-size: .78rem; }
+        .hud { justify-content: center; gap: 6px 14px; font-size: .78rem; }
         .hud .brand { display: none; }
         .legend { bottom: 8px; left: 8px; right: 8px; justify-content: center; gap: 6px 12px; font-size: .68rem; }
         .hint { display: none; }
-        .wheel-panel { top: 110px; left: 8px; right: 8px; width: auto; }
+        .wheel-panel { top: 120px; left: 8px; right: 8px; width: auto; }
       }
     </style>
   </head>
   <body>
     <canvas id="game"></canvas>
 
-    <div class="ui hud">
-      <span class="brand">MAGNETAR</span>
-      <span>Health <b id="health">100</b></span>
-      <span>Mass <b id="mass">1.00</b></span>
-      <span>Score <b id="score">0</b></span>
-      <span>Input <b id="source">keys</b></span>
-      <span>FFB <b id="ffb">—</b></span>
-    </div>
+    <div class="ui topui">
+      <div class="hud">
+        <span class="brand">MAGNETAR</span>
+        <span>Health <b id="health">100</b></span>
+        <span>Mass <b id="mass">1.00</b></span>
+        <span>Score <b id="score">0</b></span>
+        <span>Input <b id="source">keys</b></span>
+        <span>FFB <b id="ffb">—</b></span>
+      </div>
 
-    <div class="ui topbar">
-      <button id="connectButton">Connect wheel</button>
-      <button id="restartButton" class="ghost">Restart</button>
-      <button id="wheelSettingsBtn" class="ghost">Wheel settings</button>
-      <span id="status">Keys / mouse ready · wheel optional</span>
+      <div class="topbar">
+        <button id="connectButton">Connect wheel</button>
+        <button id="restartButton" class="ghost">Restart</button>
+        <button id="wheelSettingsBtn" class="ghost">Wheel settings</button>
+        <span id="status">Keys / mouse ready · wheel optional</span>
+      </div>
     </div>
 
     <div class="ui wheel-panel hidden" id="wheelPanel">
