@@ -29,7 +29,7 @@ Every orb that sticks adds mass — the magnet lags and becomes harder to contro
 
 Magnetar is built to be played with a real **force-feedback steering wheel**, with no drivers, via the [**webhid-wheel**](https://github.com/joegaffey/webhid-wheel) project.
 
-Click **Connect wheel** and pick your wheelbase — it becomes the steering axis, and its FFB reflects the magnet's mass and rotation (the heavier it gets, the heavier the wheel feels). Keyboard and mouse always work, so a wheel is entirely optional and the game never requires force feedback.
+Click **Connect wheel** and pick your wheelbase — it becomes the steering axis, and its FFB reflects the magnet's mass and rotation (the heavier it gets, the heavier the wheel feels). Use **Wheel settings** to adjust **FFB strength** and **rotation range** (match your wheel's lock-to-lock for 1:1 steering). Keyboard, mouse and touch always work, so a wheel is entirely optional.
 
 ## Run
 

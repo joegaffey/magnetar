@@ -43,8 +43,11 @@ export class SteeringInput {
     this._pointerKind = kind;
   }
 
-  async connectWheel() {
-    this.wheel = new WebHIDWheel({ maxRotation: 900, ffbStrength: 0.25 });
+  async connectWheel(opts = {}) {
+    this.wheel = new WebHIDWheel({
+      maxRotation: opts.maxRotation !== undefined ? opts.maxRotation : 900,
+      ffbStrength: opts.ffbStrength !== undefined ? opts.ffbStrength : 0.25
+    });
     const dev = await this.wheel.connect();
     if (dev) {
       this.ffbAvailable = true;
@@ -52,6 +55,14 @@ export class SteeringInput {
       this._prevWheelRot = this.wheel.rotation;
     }
     return dev;
+  }
+
+  setFfbStrength(value) {
+    if (this.wheel) this.wheel.ffbStrength = value;
+  }
+
+  setMaxRotation(value) {
+    if (this.wheel) this.wheel.maxRotation = value;
   }
 
   get ffbActive() {

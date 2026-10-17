@@ -46,6 +46,10 @@
 
       .hint { bottom: 12px; right: 14px; color: var(--muted); font-size: .8rem; text-align: right; }
 
+      .wheel-panel { top: 54px; right: 14px; width: 270px; background: rgba(18, 22, 29, .96); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; display: grid; gap: 10px; }
+      .wheel-panel .row { display: grid; grid-template-columns: 78px 1fr 42px; align-items: center; gap: 8px; font-size: .76rem; color: var(--muted); }
+      .wheel-panel input[type="range"] { width: 100%; accent-color: var(--accent); }
+
       #overlay {
         position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
         background: rgba(5, 6, 10, .72); backdrop-filter: blur(2px); padding: 24px;
@@ -62,6 +66,7 @@
         .hud .brand { display: none; }
         .legend { bottom: 8px; left: 8px; right: 8px; justify-content: center; gap: 6px 12px; font-size: .68rem; }
         .hint { display: none; }
+        .wheel-panel { top: 110px; left: 8px; right: 8px; width: auto; }
       }
     </style>
   </head>
@@ -80,7 +85,21 @@
     <div class="ui topbar">
       <button id="connectButton">Connect wheel</button>
       <button id="restartButton" class="ghost">Restart</button>
+      <button id="wheelSettingsBtn" class="ghost">Wheel settings</button>
       <span id="status">Keys / mouse ready · wheel optional</span>
+    </div>
+
+    <div class="ui wheel-panel hidden" id="wheelPanel">
+      <div class="row">
+        <label for="ffbStrength">FFB strength</label>
+        <input type="range" id="ffbStrength" min="0" max="100" value="25">
+        <span id="ffbStrengthVal">25%</span>
+      </div>
+      <div class="row">
+        <label for="wheelRange">Rotation</label>
+        <input type="range" id="wheelRange" min="180" max="1080" step="30" value="900">
+        <span id="wheelRangeVal">900°</span>
+      </div>
     </div>
 
     <div class="ui legend">

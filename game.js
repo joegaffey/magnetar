@@ -9,6 +9,12 @@ const healthEl = document.getElementById('health');
 const massEl = document.getElementById('mass');
 const scoreEl = document.getElementById('score');
 const ffbEl = document.getElementById('ffb');
+const wheelSettingsBtn = document.getElementById('wheelSettingsBtn');
+const wheelPanel = document.getElementById('wheelPanel');
+const ffbStrengthInput = document.getElementById('ffbStrength');
+const ffbStrengthVal = document.getElementById('ffbStrengthVal');
+const wheelRangeInput = document.getElementById('wheelRange');
+const wheelRangeVal = document.getElementById('wheelRangeVal');
 
 let W = 0, H = 0, CX = 0, CY = 0, DPR = 1;
 
@@ -610,10 +616,23 @@ function render() {
 }
 
 document.getElementById('connectButton').addEventListener('click', async () => {
-  const dev = await input.connectWheel();
+  const dev = await input.connectWheel({
+    ffbStrength: parseInt(ffbStrengthInput.value) / 100,
+    maxRotation: parseInt(wheelRangeInput.value)
+  });
   if (!dev) { statusEl.textContent = 'Connection cancelled'; return; }
   statusEl.textContent = dev.productName + (input.wheel.parserName ? ' \u00b7 ' + input.wheel.parserName : '');
   syncHud();
+});
+
+wheelSettingsBtn.addEventListener('click', () => wheelPanel.classList.toggle('hidden'));
+ffbStrengthInput.addEventListener('input', () => {
+  ffbStrengthVal.textContent = ffbStrengthInput.value + '%';
+  input.setFfbStrength(parseInt(ffbStrengthInput.value) / 100);
+});
+wheelRangeInput.addEventListener('input', () => {
+  wheelRangeVal.textContent = wheelRangeInput.value + '\u00b0';
+  input.setMaxRotation(parseInt(wheelRangeInput.value));
 });
 
 document.getElementById('restartButton').addEventListener('click', () => reset());
