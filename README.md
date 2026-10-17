@@ -28,7 +28,7 @@ Every orb that sticks adds mass — the magnet lags and becomes harder to contro
 
 ## Audio
 
-Fully procedural via the Web Audio API (no asset files): a **hiss/whoosh** whose pitch and gain track the energy-transfer rate, deep sub-bass explosions, low **thunks** on impacts, an ambient drone, and a mass hum that tracks the magnet's weight. An **adaptive generative score** (warm major-key pads, shimmering arpeggios, bass and soft hats) builds with difficulty and ducks under impacts — loosely inspired by dreamy, euphoric synth-pop. Sounds are **stereo-panned** by orb position. Bright synthetic ticks accent scoring (pitch rises with a streak) and impacts. **Master**, **Music** and **Mute** live in **Settings** (persisted).
+Fully procedural via the Web Audio API (no asset files): a **hiss/whoosh** whose pitch and gain track the energy-transfer rate, deep sub-bass explosions, low **thunks** on impacts, an ambient drone, and a mass hum that tracks the magnet's weight. An **adaptive generative score** (warm major-key pads, shimmering arpeggios, soft bass) builds with difficulty and ducks under impacts. It cycles through four sections — including a whole-step key lift and reordered progressions — so it doesn't loop monotonously. Loosely inspired by dreamy, euphoric synth-pop. Sounds are **stereo-panned** by orb position. Bright synthetic ticks accent scoring (pitch rises with a streak) and impacts. **Master**, **Music** and **Mute** live in **Settings** (persisted).
 
 A small music loop can be layered in later without changing the event API.
 

@@ -1,10 +1,15 @@
 const midiToFreq = (n) => 440 * Math.pow(2, (n - 69) / 12);
-const ROOTS = [50, 45, 47, 43];
-const CHORDS = [
-  [50, 54, 57],
-  [45, 49, 52],
-  [47, 50, 54],
-  [43, 47, 50]
+const SECTIONS = [
+  [[50, 54, 57], [45, 49, 52], [47, 50, 54], [43, 47, 50]],
+  [[52, 56, 59], [47, 51, 54], [49, 52, 56], [45, 49, 52]],
+  [[47, 50, 54], [43, 47, 50], [50, 54, 57], [45, 49, 52]],
+  [[43, 47, 50], [45, 49, 52], [47, 50, 54], [45, 49, 52]]
+];
+const ARP = [
+  [0, 1, 2, 1],
+  [0, 2, 1, 2],
+  [0, 1, 2, 0],
+  [0, 2, 1, 0]
 ];
 
 export class AudioEngine {
@@ -269,7 +274,7 @@ export class AudioEngine {
 
   _startMusic() {
     if (this.music) return;
-    this.music = { tempo: 92, intensity: 0.2, step: 0, nextTime: this.ctx.currentTime + 0.2 };
+    this.music = { tempo: 92, intensity: 0.2, step: 0, cycle: 0, section: 0, nextTime: this.ctx.currentTime + 0.2 };
     this._musicTimer = setInterval(() => this._scheduleMusic(), 25);
   }
 
@@ -280,35 +285,38 @@ export class AudioEngine {
       const sixteenth = (60 / this.music.tempo) / 4;
       this.music.nextTime += sixteenth;
       this.music.step = (this.music.step + 1) % 64;
+      if (this.music.step === 0) {
+        this.music.cycle += 1;
+        this.music.section = this.music.cycle % SECTIONS.length;
+      }
     }
   }
 
   _playStep(step, time) {
+    const section = this.music.section || 0;
     const bar = Math.floor(step / 16) % 4;
     const beat = step % 16;
     const intensity = this.music.intensity;
-    const chord = CHORDS[bar];
-    const root = ROOTS[bar];
+    const chord = SECTIONS[section][bar];
+    const root = chord[0];
     const beatDur = 60 / this.music.tempo;
 
     if (beat === 0) {
       for (const n of chord) this._pad(n, time, beatDur * 4 * 0.98);
       this._bass(root - 12, time, beatDur * 2);
+      if (section >= 2 && intensity > 0.4) {
+        this._bell(chord[2] + 24, time, 0.35);
+      }
     }
-    if (beat === 8) this._bass(root - 12, time, beatDur * 2);
+    if (beat === 8 && section % 2 === 0) {
+      this._bass(root - 12, time, beatDur * 2);
+    }
 
     if (beat % 2 === 0) {
-      const idx = Math.floor(step / 2) % chord.length;
+      const pattern = ARP[section];
+      const idx = pattern[Math.floor(beat / 2) % pattern.length];
       const oct = (Math.floor(step / 8) % 2) ? 24 : 12;
       this._bell(chord[idx] + oct, time, 0.55 + intensity * 0.45);
-    }
-
-    if (intensity > 0.3 && beat % 2 === 1) {
-      this._hat(time, 0.08 + intensity * 0.15);
-    }
-
-    if (intensity > 0.6 && beat === 12 && bar % 2 === 0) {
-      this._bell(chord[2] + 24, time, 0.3);
     }
   }
 
@@ -382,20 +390,6 @@ export class AudioEngine {
 
     osc.connect(lp); lp.connect(g); g.connect(this.musicBus);
     osc.start(time); osc.stop(time + dur + 0.05);
-  }
-
-  _hat(time, vel) {
-    const src = this.ctx.createBufferSource();
-    src.buffer = this.noiseBuf;
-    const hp = this.ctx.createBiquadFilter();
-    hp.type = 'highpass';
-    hp.frequency.value = 7000;
-    const g = this.ctx.createGain();
-    g.gain.setValueAtTime(0.0001, time);
-    g.gain.exponentialRampToValueAtTime(0.03 * vel, time + 0.003);
-    g.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
-    src.connect(hp); hp.connect(g); g.connect(this.musicBus);
-    src.start(time); src.stop(time + 0.06);
   }
 
   _startAmbient() {
