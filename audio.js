@@ -6,7 +6,7 @@ export class AudioEngine {
     this.ambient = null;
     this.overheatNode = null;
     this.muted = false;
-    this.volume = 0.7;
+    this.volume = 0.85;
   }
 
   init() {
@@ -22,14 +22,18 @@ export class AudioEngine {
     this.master.gain.value = this.muted ? 0 : this.volume;
 
     const comp = this.ctx.createDynamicsCompressor();
-    comp.threshold.value = -20;
-    comp.knee.value = 26;
-    comp.ratio.value = 10;
+    comp.threshold.value = -8;
+    comp.knee.value = 20;
+    comp.ratio.value = 6;
     comp.attack.value = 0.004;
     comp.release.value = 0.3;
 
+    const makeup = this.ctx.createGain();
+    makeup.gain.value = 1.3;
+
     this.master.connect(comp);
-    comp.connect(this.ctx.destination);
+    comp.connect(makeup);
+    makeup.connect(this.ctx.destination);
 
     const len = Math.floor(this.ctx.sampleRate * 2);
     const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);

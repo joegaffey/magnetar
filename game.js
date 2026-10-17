@@ -754,7 +754,7 @@ muteToggle.addEventListener('change', () => {
 });
 
 const storedVolume = parseFloat(localStorage.getItem('magnetar-volume'));
-const initialVolume = Number.isNaN(storedVolume) ? 0.7 : storedVolume;
+const initialVolume = Number.isNaN(storedVolume) ? 0.85 : storedVolume;
 audio.setVolume(initialVolume);
 volumeInput.value = Math.round(initialVolume * 100);
 volumeVal.textContent = Math.round(initialVolume * 100);
