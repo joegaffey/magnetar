@@ -795,8 +795,12 @@ musicInput.addEventListener('input', () => {
 document.addEventListener('visibilitychange', () => {
   if (!audio.ctx) return;
   if (document.hidden) audio.ctx.suspend();
-  else audio.ctx.resume();
+  else audio.unlock();
 });
+
+for (const ev of ['pointerdown', 'touchstart', 'keydown']) {
+  window.addEventListener(ev, () => audio.unlock(), { passive: true });
+}
 
 document.getElementById('restartButton').addEventListener('click', () => reset());
 overlay.querySelector('button').addEventListener('click', () => reset());

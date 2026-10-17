@@ -30,14 +30,28 @@ export class AudioEngine {
   }
 
   init() {
+    if (navigator.audioSession) {
+      try { navigator.audioSession.type = 'playback'; } catch (e) { /* unsupported */ }
+    }
     if (this.ctx) {
-      if (this.ctx.state === 'suspended') this.ctx.resume();
+      if (this.ctx.state !== 'running') this.ctx.resume().catch(() => {});
       return;
     }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
 
     this.ctx = new AC();
+    if (this.ctx.state !== 'running') this.ctx.resume().catch(() => {});
+    try {
+      const unlock = this.ctx.createBuffer(1, 1, 22050);
+      const src = this.ctx.createBufferSource();
+      src.buffer = unlock;
+      src.connect(this.ctx.destination);
+      src.start(0);
+    } catch (e) { /* ignore */ }
+    this.ctx.addEventListener('statechange', () => {
+      if (this.ctx.state === 'interrupted') this.ctx.resume().catch(() => {});
+    });
     this.master = this.ctx.createGain();
     this.master.gain.value = this.muted ? 0 : this.volume;
 
@@ -72,6 +86,11 @@ export class AudioEngine {
     this._startMusic();
 
     this._startAmbient();
+  }
+
+  unlock() {
+    if (!this.ctx) return;
+    if (this.ctx.state !== 'running') this.ctx.resume().catch(() => {});
   }
 
   setMuted(muted) {
