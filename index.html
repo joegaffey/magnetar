@@ -54,6 +54,15 @@
       #overlay h2 { margin: 0 0 8px; font-size: 1.4rem; }
       #overlay p { margin: 0 0 18px; color: var(--muted); font-size: .92rem; }
       .hidden { display: none !important; }
+
+      @media (max-width: 860px) {
+        .topbar { top: 8px; left: 8px; right: 8px; justify-content: center; }
+        #status { display: none; }
+        .hud { top: 54px; left: 8px; right: 8px; justify-content: center; gap: 6px 14px; font-size: .78rem; }
+        .hud .brand { display: none; }
+        .legend { bottom: 8px; left: 8px; right: 8px; justify-content: center; gap: 6px 12px; font-size: .68rem; }
+        .hint { display: none; }
+      }
     </style>
   </head>
   <body>
