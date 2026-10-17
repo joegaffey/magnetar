@@ -115,7 +115,7 @@ function spawnParticles(x, y, color, n, speed) {
 
 function reset() {
   magnet = { phi: 0, omega: 0 };
-  stuck = []; orbs = []; explosions = []; particles = [];
+  stuck = []; orbs = []; explosions = []; particles = []; streams = []; streamTimer = 0;
   health = 100; score = 0; caught = 0; shedCount = 0; exploded = 0;
   difficulty = 0; spawnTimer = 0.9; spawnEvery = 1.6;
   running = true; over = false; overheatTime = 0; shedCooldown = 0; jolt = 0;
@@ -236,6 +236,7 @@ function vent() {
 
 function step(dt) {
   input.update(dt);
+  updateStreams(dt);
   if (!running) return;
 
   const isOver = overheated();
@@ -382,67 +383,58 @@ function updateFfb(dt) {
 
 const ORB_COLORS = ['#e0a04a', '#7aa7ff'];
 
-function traceWisp(pts) {
-  ctx.beginPath();
-  ctx.moveTo(pts[0][0], pts[0][1]);
-  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
-  ctx.stroke();
+let streams = [];
+let streamTimer = 0;
+
+function spawnStream() {
+  for (let s = 0; s < 2; s++) {
+    const pole = poleWorld(s === 0 ? 1 : -1);
+    const dx = pole.x - CX, dy = pole.y - CY;
+    const len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len, uy = dy / len;
+    const px = -uy, py = ux;
+    const color = ORB_COLORS[s];
+    for (let k = 0; k < 2; k++) {
+      const f = Math.random() * 0.92;
+      const jitter = (Math.random() - 0.5) * 12;
+      const sp = 30 + Math.random() * 90;
+      const life = 0.35 + Math.random() * 0.5;
+      streams.push({
+        x: CX + ux * len * f + px * jitter,
+        y: CY + uy * len * f + py * jitter,
+        vx: ux * sp + px * (Math.random() - 0.5) * 30,
+        vy: uy * sp + py * (Math.random() - 0.5) * 30,
+        life, max: life, color, size: 1 + Math.random() * 1.8
+      });
+    }
+  }
 }
 
-function drawWisp(x1, y1, x2, y2, color, phase, t, isOver) {
-  const dx = x2 - x1, dy = y2 - y1;
-  const len = Math.hypot(dx, dy) || 1;
-  const px = -dy / len, py = dx / len;
-  const segs = 18;
-  const pts = [];
-  for (let i = 0; i <= segs; i++) {
-    const f = i / segs;
-    const wob = Math.sin(f * Math.PI * 3 - t * 6 + phase) * 14 * (1 - f);
-    pts.push([x1 + dx * f + px * wob, y1 + dy * f + py * wob]);
+function updateStreams(dt) {
+  streamTimer -= dt;
+  if (streamTimer <= 0) { streamTimer = 0.04; spawnStream(); }
+  for (let i = streams.length - 1; i >= 0; i--) {
+    const p = streams[i];
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    p.life -= dt;
+    if (p.life <= 0) streams.splice(i, 1);
   }
-  const paint = isOver ? '#ff8a5a' : color;
+}
 
-  ctx.save();
-  ctx.globalCompositeOperation = 'lighter';
-  ctx.lineCap = 'round';
-  ctx.shadowBlur = 20;
-  ctx.shadowColor = paint;
-  const g = ctx.createLinearGradient(x1, y1, x2, y2);
-  g.addColorStop(0, 'rgba(220, 235, 255, 0.9)');
-  g.addColorStop(1, paint);
-  ctx.strokeStyle = g;
-
-  ctx.globalAlpha = 0.3;
-  ctx.lineWidth = 9;
-  traceWisp(pts);
-  ctx.globalAlpha = 1;
-  ctx.lineWidth = 2.5;
-  traceWisp(pts);
-
-  ctx.fillStyle = paint;
-  ctx.globalAlpha = 0.5;
-  for (let i = 2; i < pts.length - 1; i += 3) {
-    ctx.beginPath(); ctx.arc(pts[i][0], pts[i][1], 1.6, 0, TAU); ctx.fill();
+function renderStreams() {
+  for (const p of streams) {
+    const a = clamp(p.life / p.max, 0, 1);
+    drawGlow(p.x, p.y, p.size * 5, p.color, 0.5 * a);
+    ctx.globalAlpha = a;
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 1;
   }
-  ctx.globalAlpha = 1;
-  ctx.restore();
 }
 
 function drawBlackHole(t, color) {
   const hp = clamp(health / 100, 0, 1);
   drawGlow(CX, CY, 74, color, 0.35);
-
-  ctx.save();
-  ctx.translate(CX, CY);
-  ctx.rotate(t * 0.9);
-  ctx.globalCompositeOperation = 'lighter';
-  ctx.strokeStyle = color;
-  ctx.shadowBlur = 18;
-  ctx.shadowColor = color;
-  ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.arc(0, 0, 27, 0, Math.PI * 1.15); ctx.stroke();
-  ctx.beginPath(); ctx.arc(0, 0, 31, Math.PI, Math.PI * 1.75); ctx.stroke();
-  ctx.restore();
 
   ctx.beginPath(); ctx.arc(CX, CY, 37, -Math.PI / 2, -Math.PI / 2 + TAU * hp);
   ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.stroke();
@@ -476,22 +468,13 @@ function render() {
   ctx.fillStyle = well;
   ctx.beginPath(); ctx.arc(CX, CY, 175, 0, TAU); ctx.fill();
 
-  ctx.save();
-  ctx.translate(CX, CY);
-  ctx.rotate(t * 0.15);
-  ctx.strokeStyle = 'rgba(110, 150, 255, 0.07)';
-  ctx.lineWidth = 1;
-  for (const r of [74, 108, 142]) { ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.stroke(); }
-  ctx.restore();
-
   const p1 = poleWorld(1), p2 = poleWorld(-1);
-
-  // energy wisps reaching out from the event horizon
-  drawWisp(CX, CY, p1.x, p1.y, ORB_COLORS[0], 0, t, isOver);
-  drawWisp(CX, CY, p2.x, p2.y, ORB_COLORS[1], Math.PI, t, isOver);
 
   // black hole / event horizon
   drawBlackHole(t, coreColor);
+
+  // particle tendrils from the horizon to each pole
+  renderStreams();
 
   // orbs (glow + core)
   for (const o of orbs) {
