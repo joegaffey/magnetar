@@ -98,11 +98,11 @@ Secondary: **hard capacity** — if `stuck ≥ MAX_STUCK`, the oldest orb is eje
 - If overheat persists for `OVERHEAT_VENT` seconds it **vents**: all stuck orbs are flung off and an explosion fires (angular kick to the magnet).
 - Shedding (spinning) back below the threshold cools it.
 
-### 5.11 Volatile orbs & explosions (experimental, in build)
-- Some orbs are **volatile** (red ring) and detonate on pole/core contact instead of sticking.
+### 5.11 Unstable orbs & explosions (in build)
+- Some orbs are **unstable** (red ring). They can be caught and absorbed, and heal **3×** the normal amount (`HEAL_PER_ORB × 3`) to match their 3× damage.
 - An explosion applies a radial impulse to nearby orbs, an **angular kick to the magnet**, and damages the core if close.
-- A volatile orb hitting the **centre** triggers a **larger explosion** (1.8× radius/force/particles) and **3× core damage** (24) plus the blast damage.
-- Goal: make slinging/repelled orbs kinetic — chain reactions are desirable.
+- An unstable orb reaching the **centre** detonates in a **larger explosion** (1.8× radius/force/particles) and deals **3× core damage** (24) plus the blast damage.
+- Goal: make unstable orbs high-risk / high-reward — grab them for a big heal, but never let one reach the core.
 
 ### 5.12 Future mechanics (candidate)
 - Orb types: heavy, fast, shielded (needs 2 hits).

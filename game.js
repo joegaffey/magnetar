@@ -206,11 +206,10 @@ function explode(x, y, big = false) {
 }
 
 function catchOrb(orb) {
-  if (orb.volatile) { explode(orb.x, orb.y); return; }
   if (stuck.length >= MAX_STUCK) shedOne(0, true);
   const dx = orb.x - CX, dy = orb.y - CY;
   const c = Math.cos(-magnet.phi), s = Math.sin(-magnet.phi);
-  stuck.push({ lx: dx * c - dy * s, ly: dx * s + dy * c, mass: ORB_MASS, pol: orb.pol, size: ORB_SIZE });
+  stuck.push({ lx: dx * c - dy * s, ly: dx * s + dy * c, mass: ORB_MASS, pol: orb.pol, size: ORB_SIZE, volatile: orb.volatile });
   caught++;
   score += 1;
   spawnParticles(orb.x, orb.y, ORB_COLORS[orb.pol], 12, 220);
@@ -274,7 +273,8 @@ function step(dt) {
     const o = stuck[i];
     const ds = Math.min(o.size, (ORB_SIZE / ABSORB_TIME) * dt);
     o.size -= ds;
-    health = Math.min(100, health + (HEAL_PER_ORB / ORB_SIZE) * ds);
+    const healMult = o.volatile ? 3 : 1;
+    health = Math.min(100, health + (HEAL_PER_ORB * healMult / ORB_SIZE) * ds);
     if (Math.random() < ds * 3) spawnStuckEnergy(o);
     if (o.size <= 0.3) stuck.splice(i, 1);
   }
@@ -586,9 +586,13 @@ function render() {
     const wx = CX + o.lx * c - o.ly * s;
     const wy = CY + o.lx * s + o.ly * c;
     const sz = o.size !== undefined ? o.size : ORB_SIZE;
-    drawGlow(wx, wy, sz * 2.7, ORB_COLORS[o.pol], 0.6);
+    drawGlow(wx, wy, sz * 2.7, o.volatile ? '#ff5a5f' : ORB_COLORS[o.pol], 0.6);
     ctx.beginPath(); ctx.arc(wx, wy, sz, 0, TAU);
     ctx.fillStyle = ORB_COLORS[o.pol]; ctx.fill();
+    if (o.volatile) {
+      ctx.beginPath(); ctx.arc(wx, wy, sz + 4, 0, TAU);
+      ctx.strokeStyle = '#ff5a5f'; ctx.lineWidth = 2; ctx.stroke();
+    }
   }
 
   // explosions: hot flash + additive shock rings

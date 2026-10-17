@@ -22,7 +22,7 @@ Every orb that sticks adds mass — the magnet lags and becomes harder to contro
 - **Weight:** each stuck orb adds angular inertia (HUD `Mass`), making the magnet sluggish and overshooty.
 - **Absorb:** stuck orbs slowly shrink and feed the core, restoring `Health` and removing their mass.
 - **Overheat:** above a mass threshold the magnet loses attraction; if it stays hot it vents in a burst.
-- **Volatile orbs:** some detonate on contact — blast waves shove nearby orbs and kick the magnet. A volatile orb hitting the core is especially bad.
+- **Unstable orbs:** some detonate at the core for 3× damage (with a blast that shoves nearby orbs and kicks the magnet), but if you catch and absorb them they heal 3× as much — high risk, high reward.
 - **Escalation:** spawn rate and orb speed climb over time.
 
 ## Force-feedback wheel support
