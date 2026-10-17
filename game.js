@@ -395,16 +395,17 @@ function spawnStream() {
     const px = -uy, py = ux;
     const color = ORB_COLORS[s];
     for (let k = 0; k < 2; k++) {
-      const f = Math.random() * 0.92;
-      const jitter = (Math.random() - 0.5) * 12;
-      const sp = 30 + Math.random() * 90;
-      const life = 0.35 + Math.random() * 0.5;
+      const f = Math.random() * 0.9;
+      const jitter = (Math.random() - 0.5) * 14;
+      const drift = 8 + Math.random() * 26;
+      const life = 0.4 + Math.random() * 0.45;
       streams.push({
         x: CX + ux * len * f + px * jitter,
         y: CY + uy * len * f + py * jitter,
-        vx: ux * sp + px * (Math.random() - 0.5) * 30,
-        vy: uy * sp + py * (Math.random() - 0.5) * 30,
-        life, max: life, color, size: 1 + Math.random() * 1.8
+        vx: ux * drift + px * (Math.random() - 0.5) * 24,
+        vy: uy * drift + py * (Math.random() - 0.5) * 24,
+        ux, uy, len,
+        life, max: life, color, size: 0.8 + Math.random() * 1.2
       });
     }
   }
@@ -417,14 +418,15 @@ function updateStreams(dt) {
     const p = streams[i];
     p.x += p.vx * dt; p.y += p.vy * dt;
     p.life -= dt;
-    if (p.life <= 0) streams.splice(i, 1);
+    const proj = (p.x - CX) * p.ux + (p.y - CY) * p.uy;
+    if (p.life <= 0 || proj > p.len - 12 || proj < -4) streams.splice(i, 1);
   }
 }
 
 function renderStreams() {
   for (const p of streams) {
-    const a = clamp(p.life / p.max, 0, 1);
-    drawGlow(p.x, p.y, p.size * 5, p.color, 0.5 * a);
+    const a = clamp(p.life / p.max, 0, 1) * 0.7;
+    drawGlow(p.x, p.y, p.size * 4, p.color, 0.25 * a);
     ctx.globalAlpha = a;
     ctx.fillStyle = p.color;
     ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, TAU); ctx.fill();
