@@ -17,6 +17,7 @@ Every orb that sticks adds mass — the magnet lags and becomes harder to contro
 ## Mechanics
 
 - **Catch:** orbs are pulled to the poles; contact sticks them.
+- **Physical magnet:** orbs bounce off the bar and never pass through it; the opposite-colour pole can bat them away, and each hit gives a wheel jolt.
 - **Polarity:** one pole attracts amber orbs, the other blue; the wrong pole pushes them away.
 - **Core gravity:** the black hole pulls every orb toward the centre, so positioning matters.
 - **Weight:** each stuck orb adds angular inertia (HUD `Mass`), making the magnet sluggish and overshooty.

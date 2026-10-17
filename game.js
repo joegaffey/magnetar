@@ -36,6 +36,8 @@ window.addEventListener('resize', resize);
 // magnet
 const BAR_HALF = 85;
 const POLE_R = 22;             // surface-contact catch radius
+const MAGNET_R = 10;           // bar collision half-thickness
+const BOUNCE = 0.75;
 const ATTRACT_R = 150;
 const PULL = 480;
 const REPEL = 0.5;             // opposite pole push
@@ -81,7 +83,7 @@ let health = 100, score = 0, caught = 0, shedCount = 0, exploded = 0;
 let difficulty = 0, spawnTimer = 1.0, spawnEvery = 1.6;
 let running = false, over = false;
 let overheatTime = 0, shedCooldown = 0;
-let jolt = 0, joltDir = 0;
+let jolt = 0, joltDir = 0, joltForce = 0;
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const TAU = Math.PI * 2;
@@ -127,7 +129,7 @@ function reset() {
   stuck = []; orbs = []; explosions = []; particles = []; streams = []; streamTimer = 0;
   health = 100; score = 0; caught = 0; shedCount = 0; exploded = 0;
   difficulty = 0; spawnTimer = 0.9; spawnEvery = 1.6;
-  running = true; over = false; overheatTime = 0; shedCooldown = 0; jolt = 0;
+  running = true; over = false; overheatTime = 0; shedCooldown = 0; jolt = 0; joltForce = 0;
   input.angle = 0;
   overlay.classList.add('hidden');
   syncHud();
@@ -237,6 +239,40 @@ function catchOrb(orb) {
   spawnParticles(orb.x, orb.y, ORB_COLORS[orb.pol], 12, 220);
   jolt = 0.09;
   joltDir = Math.sign(orb.x - CX) || 1;
+  joltForce = 0.8;
+}
+
+function collideBar(o) {
+  const p1 = poleWorld(1), p2 = poleWorld(-1);
+  const ax = p2.x - p1.x, ay = p2.y - p1.y;
+  const len2 = ax * ax + ay * ay || 1;
+  let t = ((o.x - p1.x) * ax + (o.y - p1.y) * ay) / len2;
+  t = clamp(t, 0, 1);
+  const cx = p1.x + ax * t, cy = p1.y + ay * t;
+  let dx = o.x - cx, dy = o.y - cy;
+  let d = Math.hypot(dx, dy);
+  const R = MAGNET_R + o.r;
+  if (d >= R) return false;
+
+  if (d < 0.001) {
+    const inv = 1 / (Math.hypot(ax, ay) || 1);
+    dx = -ay * inv; dy = ax * inv; d = 0.001;
+  }
+  const nx = dx / d, ny = dy / d;
+
+  o.x = cx + nx * R;
+  o.y = cy + ny * R;
+  const vn = o.vx * nx + o.vy * ny;
+  if (vn < 0) {
+    o.vx -= (1 + BOUNCE) * vn * nx;
+    o.vy -= (1 + BOUNCE) * vn * ny;
+    const impact = -vn;
+    jolt = Math.min(0.12, 0.03 + impact / 1400);
+    joltDir = Math.sign(nx) || 1;
+    joltForce = clamp(0.25 + impact / 1200, 0.25, 0.7);
+    spawnParticles(cx + nx * MAGNET_R, cy + ny * MAGNET_R, '#cfe0ff', 6, 160);
+  }
+  return true;
 }
 
 function shedOne(index, quiet) {
@@ -387,6 +423,7 @@ function step(dt) {
         }
       }
       if (didCatch) continue;
+      if (collideBar(o)) continue;
     }
 
     if (Math.hypot(o.x - CX, o.y - CY) < CORE_R + o.r) {
@@ -442,7 +479,7 @@ function updateFfb(dt) {
   if (!running) { ffbEl.textContent = 'idle'; return; }
 
   let force = clamp(-magnet.omega * inertia() * 0.06, -1, 1);
-  if (jolt > 0) { jolt -= dt; force = joltDir * 0.8; }
+  if (jolt > 0) { jolt -= dt; force = joltDir * joltForce; }
   if (Math.abs(force) < FFB_DEADZONE) force = 0;
   ffbEl.textContent = force.toFixed(2);
   input.applyForce(force);

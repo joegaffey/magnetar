@@ -57,7 +57,8 @@ I = I0 + Σ m_orb
 - A gentle **core gravity well** (`CORE_PULL`) accelerates free orbs toward the centre, speed-capped at `MAX_ORB_SPEED`.
 - Each free orb is pulled toward the **nearest pole** within `ATTRACT_R`:
   `a = PULL · (1 − d/ATTRACT_R)` toward the pole.
-- Contact within `POLE_R` of a pole → **caught** (sticks).
+- Contact within `POLE_R` of a matching pole → **caught** (sticks).
+- The magnet bar is **physical**: free orbs bounce off it and never pass through; the opposite-colour pole can bat them away. Each impact gives a force-feedback jolt proportional to impact speed.
 
 ### 5.3 Mass / weight
 - Each caught orb adds `ORB_MASS` to `I`.
@@ -159,6 +160,8 @@ Low hum whose pitch/volume tracks `Mass`; metallic ping on catch; whoosh on shed
 | --- | --- | --- |
 | `BAR_HALF` | 85 | pole distance from centre (px) |
 | `POLE_R` | 22 | surface-contact catch radius (orbs visibly touch) |
+| `MAGNET_R` | 10 | bar collision half-thickness |
+| `BOUNCE` | 0.75 | restitution when an orb hits the bar |
 | `ATTRACT_R` | 150 | attraction range |
 | `PULL` | 480 | attraction accel at the pole |
 | `REPEL` | 0.5 | opposite-pole push (fraction of pull) |
