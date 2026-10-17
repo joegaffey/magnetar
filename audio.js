@@ -193,7 +193,7 @@ export class AudioEngine {
 
     const bus = this.ctx.createGain();
     bus.gain.value = 0.0001;
-    bus.gain.exponentialRampToValueAtTime(0.055, t0 + 2.5);
+    bus.gain.exponentialRampToValueAtTime(0.04, t0 + 2.5);
     bus.connect(this.master);
 
     const o1 = this.ctx.createOscillator();
@@ -201,31 +201,37 @@ export class AudioEngine {
     o1.frequency.value = 55;
 
     const o2 = this.ctx.createOscillator();
-    o2.type = 'triangle';
-    o2.frequency.value = 82.4;
-    o2.detune.value = 6;
+    o2.type = 'sine';
+    o2.frequency.value = 110;
+
+    const g2 = this.ctx.createGain();
+    g2.gain.value = 0.4;
 
     const lp = this.ctx.createBiquadFilter();
     lp.type = 'lowpass';
-    lp.frequency.value = 190;
+    lp.frequency.value = 180;
     lp.Q.value = 0.7;
 
     const lfo = this.ctx.createOscillator();
-    lfo.frequency.value = 0.07;
+    lfo.frequency.value = 0.06;
     const lfoGain = this.ctx.createGain();
-    lfoGain.gain.value = 50;
+    lfoGain.gain.value = 40;
     lfo.connect(lfoGain);
     lfoGain.connect(lp.frequency);
 
-    o1.connect(lp); o2.connect(lp); lp.connect(bus);
+    o1.connect(lp); o2.connect(g2); g2.connect(lp); lp.connect(bus);
     o1.start(); o2.start(); lfo.start();
 
-    const mo = this.ctx.createOscillator();
-    mo.type = 'sine';
-    mo.frequency.value = 58;
+    const msrc = this.ctx.createBufferSource();
+    msrc.buffer = this.noiseBuf;
+    msrc.loop = true;
+    const mf = this.ctx.createBiquadFilter();
+    mf.type = 'lowpass';
+    mf.frequency.value = 150;
+    mf.Q.value = 0.5;
     const mg = this.ctx.createGain();
     mg.gain.value = 0.0001;
-    mo.connect(mg); mg.connect(this.master); mo.start();
+    msrc.connect(mf); mf.connect(mg); mg.connect(this.master); msrc.start();
 
     const tsrc = this.ctx.createBufferSource();
     tsrc.buffer = this.noiseBuf;
@@ -238,15 +244,15 @@ export class AudioEngine {
     tg.gain.value = 0.0001;
     tsrc.connect(tf); tf.connect(tg); tg.connect(this.master); tsrc.start();
 
-    this.ambient = { bus, o1, o2, mo, mg, tsrc, tf, tg };
+    this.ambient = { bus, o1, o2, g2, msrc, mf, mg, tsrc, tf, tg };
   }
 
   setMass(mass) {
     if (!this.ambient) return;
     const t = this.ctx.currentTime;
     const m = Math.min(Math.max(0, mass - 1), 6);
-    this.ambient.mo.frequency.setTargetAtTime(55 + m * 20, t, 0.2);
-    this.ambient.mg.gain.setTargetAtTime(0.0001 + m * 0.007, t, 0.2);
+    this.ambient.mf.frequency.setTargetAtTime(140 + m * 30, t, 0.2);
+    this.ambient.mg.gain.setTargetAtTime(0.0001 + m * 0.012, t, 0.2);
   }
 
   setTransfer(rate) {
