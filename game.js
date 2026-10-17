@@ -209,11 +209,15 @@ function shedOne(index, quiet) {
   const len = Math.hypot(rx, ry) || 1;
   const tx = -magnet.omega * ry;
   const ty = magnet.omega * rx;
+  let vx = tx * 0.6 + (rx / len) * 80;
+  let vy = ty * 0.6 + (ry / len) * 80;
+  const sp = Math.hypot(vx, vy) || 1;
+  const cap = 180;
+  if (sp > cap) { vx = vx / sp * cap; vy = vy / sp * cap; }
   orbs.push({
-    x: wx, y: wy,
-    vx: tx * 18 + (rx / len) * 200,
-    vy: ty * 18 + (ry / len) * 200,
-    r: 11, pol: o.pol, volatile: false, shed: true
+    x: wx, y: wy, vx, vy,
+    r: 11, pol: o.pol, volatile: false, shed: true,
+    life: 1.4, maxLife: 1.4
   });
   stuck.splice(index, 1);
   shedCount++;
@@ -268,6 +272,11 @@ function step(dt) {
 
   for (let i = orbs.length - 1; i >= 0; i--) {
     const o = orbs[i];
+
+    if (o.shed) {
+      o.life -= dt;
+      if (o.life <= 0) { orbs.splice(i, 1); continue; }
+    }
 
     if (!o.shed && !isOver) {
       for (const { p, aff } of ps) {
@@ -381,9 +390,12 @@ function render() {
   // orbs (glow + core)
   for (const o of orbs) {
     const col = o.shed ? '#9dbcff' : ORB_COLORS[o.pol];
-    drawGlow(o.x, o.y, o.r * 3, col, 0.55);
+    const alpha = o.shed ? clamp(o.life / (o.maxLife || 1.4), 0, 1) : 1;
+    drawGlow(o.x, o.y, o.r * 3, col, 0.55 * alpha);
+    ctx.globalAlpha = alpha;
     ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, TAU);
     ctx.fillStyle = col; ctx.fill();
+    ctx.globalAlpha = 1;
     if (o.volatile && !o.shed) {
       ctx.beginPath(); ctx.arc(o.x, o.y, o.r + 5, 0, TAU);
       ctx.strokeStyle = '#ff5a5f'; ctx.lineWidth = 2; ctx.stroke();
