@@ -43,6 +43,7 @@ const SHED_ACCEL = 5200;       // w^2 * r threshold for centrifugal shed
 const SHED_INTERVAL = 0.12;    // seconds between shed orbs
 const CORE_R = 20;
 const CORE_PULL = 240;         // acceleration of free orbs toward the core (all orbs)
+const ORB_DRAG = 1.1;          // linear drag on free orbs (1/s)
 const MAX_ORB_SPEED = 340;
 const FFB_DEADZONE = 0.05;
 
@@ -326,6 +327,8 @@ function step(dt) {
       const dc = Math.hypot(dxc, dyc) || 0.001;
       o.vx += (dxc / dc) * CORE_PULL * dt;
       o.vy += (dyc / dc) * CORE_PULL * dt;
+      o.vx -= o.vx * ORB_DRAG * dt;
+      o.vy -= o.vy * ORB_DRAG * dt;
       const sp = Math.hypot(o.vx, o.vy);
       if (sp > MAX_ORB_SPEED) { o.vx = o.vx / sp * MAX_ORB_SPEED; o.vy = o.vy / sp * MAX_ORB_SPEED; }
     }

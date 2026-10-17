@@ -169,6 +169,7 @@ Low hum whose pitch/volume tracks `Mass`; metallic ping on catch; whoosh on shed
 | `SHED_INTERVAL` | 0.12 s | min time between shed orbs |
 | `CORE_R` | 20 | core radius |
 | `CORE_PULL` | 240 | core gravity-well acceleration on all free orbs |
+| `ORB_DRAG` | 1.1 /s | linear drag on free orbs (≈218 px/s terminal) |
 | `MAX_ORB_SPEED` | 340 px/s | free-orb speed cap |
 | Health / hit | 100 / 12 | core durability |
 | Spawn | 1.6 → 0.45 s | interval over time |
