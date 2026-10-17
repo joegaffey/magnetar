@@ -32,7 +32,8 @@ const BAR_HALF = 85;
 const POLE_R = 22;             // surface-contact catch radius
 const ATTRACT_R = 150;
 const PULL = 760;
-const REPEL = 0.45;            // opposite pole push
+const REPEL = 0.8;             // opposite pole push
+const REPEL_RANGE = ATTRACT_R * 1.4; // wrong pole acts from further away
 const K_TORQUE = 170;
 const D_TORQUE = 17;
 const BASE_I = 1.0;
@@ -284,12 +285,17 @@ function step(dt) {
       for (const { p, aff } of ps) {
         const dx = o.x - p.x, dy = o.y - p.y;
         const d = Math.hypot(dx, dy) || 0.001;
-        if (d < ATTRACT_R) {
-          const ux = dx / d, uy = dy / d;
-          const f = PULL * (1 - d / ATTRACT_R);
-          const sign = (aff === o.pol) ? -1 : REPEL;
-          o.vx += ux * f * sign * dt;
-          o.vy += uy * f * sign * dt;
+        const ux = dx / d, uy = dy / d;
+        if (aff === o.pol) {
+          if (d < ATTRACT_R) {
+            const f = PULL * (1 - d / ATTRACT_R);
+            o.vx -= ux * f * dt;
+            o.vy -= uy * f * dt;
+          }
+        } else if (d < REPEL_RANGE) {
+          const f = PULL * REPEL * (1 - d / REPEL_RANGE);
+          o.vx += ux * f * dt;
+          o.vy += uy * f * dt;
         }
       }
     }
