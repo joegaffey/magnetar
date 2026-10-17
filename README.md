@@ -26,11 +26,17 @@ Every orb that sticks adds mass — the magnet lags and becomes harder to contro
 - **Unstable orbs:** some detonate at the core for 3× damage (with a blast that shoves nearby orbs and kicks the magnet), but if you catch one it bursts **instantly** for a 3× heal — high risk, high reward.
 - **Escalation:** spawn rate and orb speed climb over time.
 
+## Audio
+
+Fully procedural via the Web Audio API (no asset files): metallic catches, unstable bursts, explosions, a shed whoosh, damage and overheat alarms, plus an ambient drone, a **mass hum** that tracks the magnet's weight, and proximity tension. Sounds are **stereo-panned** by orb position. **Mute** lives in **Settings** (persisted).
+
+A small music loop can be layered in later without changing the event API.
+
 ## Force-feedback wheel support
 
 Magnetar is built to be played with a real **force-feedback steering wheel**, with no drivers, via the [**webhid-wheel**](https://github.com/joegaffey/webhid-wheel) project.
 
-Click **Connect wheel** and pick your wheelbase — it becomes the steering axis, and its FFB reflects the magnet's mass and rotation (the heavier it gets, the heavier the wheel feels). Use **Wheel settings** to adjust **FFB strength** and **rotation range** (match your wheel's lock-to-lock for 1:1 steering). Keyboard, mouse and touch always work, so a wheel is entirely optional.
+Click **Connect wheel** and pick your wheelbase — it becomes the steering axis, and its FFB reflects the magnet's mass and rotation (the heavier it gets, the heavier the wheel feels). Use **Settings** to adjust **FFB strength**, **rotation range** (match your wheel's lock-to-lock for 1:1 steering), and **mute audio**. Keyboard, mouse and touch always work, so a wheel is entirely optional.
 
 ## Run
 

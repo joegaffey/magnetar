@@ -50,6 +50,9 @@
       .wheel-panel { top: 54px; right: 14px; width: 270px; background: rgba(18, 22, 29, .96); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; display: grid; gap: 10px; }
       .wheel-panel .row { display: grid; grid-template-columns: 78px 1fr 42px; align-items: center; gap: 8px; font-size: .76rem; color: var(--muted); }
       .wheel-panel input[type="range"] { width: 100%; accent-color: var(--accent); }
+      .wheel-panel .section { font-size: .64rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+      .wheel-panel .check { display: flex; align-items: center; gap: 8px; font-size: .8rem; color: var(--muted); }
+      .wheel-panel .check input { accent-color: var(--accent); }
 
       #overlay {
         position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
@@ -88,13 +91,16 @@
 
       <div class="topbar">
         <button id="connectButton">Connect wheel</button>
-        <button id="wheelSettingsBtn" class="ghost">Wheel settings</button>
+        <button id="wheelSettingsBtn" class="ghost">Settings</button>
         <button id="restartButton" class="ghost">Restart</button>
         <span id="status">Keys / mouse ready · wheel optional</span>
       </div>
     </div>
 
     <div class="ui wheel-panel hidden" id="wheelPanel">
+      <div class="section">Audio</div>
+      <label class="check"><input type="checkbox" id="muteToggle"> Mute audio</label>
+      <div class="section">Wheel</div>
       <div class="row">
         <label for="ffbStrength">FFB strength</label>
         <input type="range" id="ffbStrength" min="0" max="100" value="25">

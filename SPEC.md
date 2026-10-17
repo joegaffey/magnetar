@@ -152,7 +152,12 @@ Secondary: **hard capacity** — if `stuck ≥ MAX_STUCK`, the oldest orb is eje
 - **Motion:** snappy spring on the magnet; particles ease out; no unnecessary UI animation.
 
 ### Audio (optional, later)
-Low hum whose pitch/volume tracks `Mass`; metallic ping on catch; whoosh on shed; alarm on core hit.
+### Audio (implemented, procedural)
+- **Event SFX (Web Audio, no assets):** metallic catch ping (pitch by polarity), unstable burst, explosion thump + noise, shed whoosh, damage tone, overheat alarm, absorption ticks, game-over sting.
+- **Ambient layers:** dark detuned drone; **mass hum** whose pitch/gain tracks inertia; proximity **tension** tone as orbs near a pole.
+- **Stereo panning** by orb X relative to the core; black hole stays centred.
+- **Mute** in the generic **Settings** panel, persisted in `localStorage`; AudioContext resumed on the Start gesture and suspended when the tab is hidden.
+- Optional later: a small music loop layered on top (does not change the SFX API).
 
 ## 8. Parameters (current)
 

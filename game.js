@@ -1,4 +1,5 @@
 import { SteeringInput } from './input.js';
+import { AudioEngine } from './audio.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -15,6 +16,7 @@ const ffbStrengthInput = document.getElementById('ffbStrength');
 const ffbStrengthVal = document.getElementById('ffbStrengthVal');
 const wheelRangeInput = document.getElementById('wheelRange');
 const wheelRangeVal = document.getElementById('wheelRangeVal');
+const muteToggle = document.getElementById('muteToggle');
 
 let W = 0, H = 0, CX = 0, CY = 0, DPR = 1;
 
@@ -73,6 +75,7 @@ const EXPLOSION_TORQUE = 5;
 const EXPLOSION_DAMAGE = 12;
 
 const input = new SteeringInput({ keyRate: 540, mouseRange: 540 });
+const audio = new AudioEngine();
 
 let magnet = { phi: 0, omega: 0 };
 let stuck = [];
@@ -84,10 +87,12 @@ let difficulty = 0, spawnTimer = 1.0, spawnEvery = 1.6;
 let running = false, over = false;
 let overheatTime = 0, shedCooldown = 0;
 let jolt = 0, joltDir = 0, joltForce = 0;
+let wasOverheated = false, audioAccum = 0;
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const TAU = Math.PI * 2;
 const rand = (a, b) => a + Math.random() * (b - a);
+const panOf = (x) => clamp((x - CX) / (W / 2), -1, 1) * 0.8;
 
 // pre-rendered glow sprites (cheap neon bloom)
 const glowCache = new Map();
@@ -131,6 +136,9 @@ function reset() {
   difficulty = 0; spawnTimer = 0.9; spawnEvery = 1.6;
   running = true; over = false; overheatTime = 0; shedCooldown = 0; jolt = 0; joltForce = 0;
   input.angle = 0;
+  audio.init();
+  audio.overheat(false);
+  wasOverheated = false;
   overlay.classList.add('hidden');
   syncHud();
 }
@@ -150,6 +158,7 @@ function syncHud() {
 function gameOver() {
   over = true; running = false;
   input.stopFfb();
+  audio.gameOver();
   overlay.querySelector('h2').textContent = 'Core breached';
   overlay.querySelector('p').textContent = 'Score: ' + score + ' · caught ' + caught + ' · unstable ' + exploded + '.';
   overlay.classList.remove('hidden');
@@ -187,6 +196,7 @@ function spawnOrb() {
 
 function explode(x, y, big = false) {
   const scale = big ? 1.8 : 1;
+  audio.explode(scale, panOf(x));
   explosions.push({ x, y, life: 0.45, max: 0.45, scale });
   const n = Math.max(1, Math.round(scale));
   spawnParticles(x, y, '#fff2d0', 12 * n, 560, 0.8);
@@ -209,6 +219,7 @@ function explode(x, y, big = false) {
 
 function powerBurst(x, y, pol) {
   health = Math.min(100, health + HEAL_PER_ORB * 3);
+  audio.burst(pol, panOf(x));
   score += 1;
   exploded++;
   explosions.push({ x, y, life: 0.45, max: 0.45, scale: 1.2 });
@@ -237,6 +248,7 @@ function catchOrb(orb) {
   caught++;
   score += 1;
   spawnParticles(orb.x, orb.y, ORB_COLORS[orb.pol], 12, 220);
+  audio.catch(orb.pol, panOf(orb.x));
   jolt = 0.09;
   joltDir = Math.sign(orb.x - CX) || 1;
   joltForce = 0.8;
@@ -291,7 +303,10 @@ function shedOne(index, quiet) {
     life: 1.4, maxLife: 1.4
   });
   stuck.splice(index, 1);
-  if (!quiet) spawnParticles(wx, wy, ORB_COLORS[o.pol], 10, 260);
+  if (!quiet) {
+    spawnParticles(wx, wy, ORB_COLORS[o.pol], 10, 260);
+    audio.shed(panOf(wx));
+  }
 }
 
 function vent() {
@@ -426,6 +441,7 @@ function step(dt) {
       } else if (!o.shed) {
         health -= 8;
         spawnParticles(o.x, o.y, '#ff5a5f', 14, 240);
+        audio.damage(panOf(o.x));
       }
       orbs.splice(i, 1);
       if (health <= 0) { gameOver(); return; }
@@ -461,7 +477,27 @@ requestAnimationFrame(frame);
   if (dt > 0.1) dt = 0.1;
   acc += dt;
   while (acc >= STEP) { step(STEP); acc -= STEP; }
+  updateAudio(dt);
   render();
+}
+
+function updateAudio(dt) {
+  audioAccum += dt;
+  if (audioAccum < 0.08) return;
+  audioAccum = 0;
+  audio.setMass(inertia());
+  let nearest = Infinity;
+  const ps = poles();
+  for (const o of orbs) {
+    if (o.shed) continue;
+    for (const { p } of ps) {
+      const d = Math.hypot(o.x - p.x, o.y - p.y);
+      if (d < nearest) nearest = d;
+    }
+  }
+  audio.setTension(nearest === Infinity ? 0 : clamp(1 - nearest / ATTRACT_R, 0, 1));
+  const oh = overheated();
+  if (oh !== wasOverheated) { audio.overheat(oh); wasOverheated = oh; }
 }
 
 function updateFfb(dt) {
@@ -533,6 +569,7 @@ function spawnStuckEnergy(o) {
   const wx = CX + o.lx * c - o.ly * s;
   const wy = CY + o.lx * s + o.ly * c;
   spawnEnergyToPole(wx, wy, nearestPole(wx, wy), o.pol);
+  audio.absorb(panOf(wx));
 }
 
 function updateStreams(dt) {
@@ -696,6 +733,20 @@ ffbStrengthInput.addEventListener('input', () => {
 wheelRangeInput.addEventListener('input', () => {
   wheelRangeVal.textContent = wheelRangeInput.value + '\u00b0';
   input.setMaxRotation(parseInt(wheelRangeInput.value));
+});
+
+const storedMute = localStorage.getItem('magnetar-muted') === '1';
+audio.setMuted(storedMute);
+muteToggle.checked = storedMute;
+muteToggle.addEventListener('change', () => {
+  audio.setMuted(muteToggle.checked);
+  localStorage.setItem('magnetar-muted', muteToggle.checked ? '1' : '0');
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (!audio.ctx) return;
+  if (document.hidden) audio.ctx.suspend();
+  else audio.ctx.resume();
 });
 
 document.getElementById('restartButton').addEventListener('click', () => reset());
