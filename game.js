@@ -621,8 +621,24 @@ overlay.querySelector('button').addEventListener('click', () => reset());
 
 canvas.addEventListener('mousemove', (e) => {
   const r = canvas.getBoundingClientRect();
-  input.setPointer(e.clientX - r.left, r.width);
+  input.setPointer(e.clientX - r.left, r.width, 'mouse');
 });
+
+function touchPoint(e) {
+  const t = e.touches[0] || e.changedTouches[0];
+  const r = canvas.getBoundingClientRect();
+  return { x: t.clientX - r.left, width: r.width };
+}
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  const p = touchPoint(e);
+  input.setPointer(p.x, p.width, 'touch');
+}, { passive: false });
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  const p = touchPoint(e);
+  input.setPointer(p.x, p.width, 'touch');
+}, { passive: false });
 
 input.angle = 0;
 running = false;

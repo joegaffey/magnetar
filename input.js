@@ -22,7 +22,8 @@ export class SteeringInput {
     this._keys = { left: false, right: false };
     this._pointer = { x: null, width: 1 };
     this._lastWheel = -Infinity;
-    this._lastMouse = -Infinity;
+    this._lastPointer = -Infinity;
+    this._pointerKind = 'mouse';
     this._prevWheelRot = null;
 
     window.addEventListener('keydown', (e) => this._onKey(e, true));
@@ -34,11 +35,12 @@ export class SteeringInput {
     if (e.code === 'ArrowRight' || e.code === 'KeyD') { this._keys.right = down; e.preventDefault(); }
   }
 
-  setPointer(x, width) {
+  setPointer(x, width, kind = 'mouse') {
     if (x === null || x === undefined) return;
     this._pointer.x = x;
     this._pointer.width = width || 1;
-    this._lastMouse = performance.now();
+    this._lastPointer = performance.now();
+    this._pointerKind = kind;
   }
 
   async connectWheel() {
@@ -68,11 +70,11 @@ export class SteeringInput {
 
     if (this.wheel && now - this._lastWheel < 300) this.source = 'wheel';
     else if (this._keys.left || this._keys.right) this.source = 'keys';
-    else if (now - this._lastMouse < 300) this.source = 'mouse';
+    else if (now - this._lastPointer < 300) this.source = this._pointerKind;
 
     if (this.source === 'wheel' && this.wheel && this.wheel.rotation !== undefined) {
       this.angle = this.wheel.rotation;
-    } else if (this.source === 'mouse' && this._pointer.x !== null) {
+    } else if ((this.source === 'mouse' || this.source === 'touch') && this._pointer.x !== null) {
       const n = (this._pointer.x / this._pointer.width - 0.5) * 2;
       this.angle = n * this.mouseRange;
     } else if (this.source === 'keys') {

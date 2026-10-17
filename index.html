@@ -18,7 +18,7 @@
       * { box-sizing: border-box; }
       html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); }
       body { color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
-      canvas { position: fixed; inset: 0; display: block; }
+      canvas { position: fixed; inset: 0; display: block; touch-action: none; }
 
       .ui { position: fixed; z-index: 10; }
       .hud { top: 12px; left: 14px; display: flex; gap: 16px; flex-wrap: wrap; font-variant-numeric: tabular-nums; font-size: .88rem; color: var(--muted); }
@@ -80,12 +80,12 @@
       <span><i class="dot volatile"></i>volatile — explodes on contact</span>
     </div>
 
-    <div class="ui hint">wheel · ←/→ or A/D · mouse</div>
+    <div class="ui hint">wheel · ←/→ or A/D · mouse · touch</div>
 
     <div id="overlay">
       <div class="card">
         <h2>Magnetar</h2>
-        <p>Hold ←/→ (or A/D), or move the mouse to rotate the magnet. Catch orbs on the matching pole and let them be absorbed to restore the core — spinning too fast sheds them, so avoid that.</p>
+        <p>Hold ←/→ (or A/D), move the mouse, or drag on screen to rotate the magnet. Catch orbs on the matching pole and let them be absorbed to restore the core — spinning too fast sheds them, so avoid that.</p>
         <button>Start</button>
       </div>
     </div>
