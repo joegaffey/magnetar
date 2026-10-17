@@ -80,11 +80,29 @@ Secondary: **hard capacity** — if `stuck ≥ MAX_STUCK`, the oldest orb is eje
 ### 5.7 Scoring
 - `+1` per catch, `+2` per shed. (Planned: survival ticks, combo/multipliers.)
 
-### 5.8 Future mechanics (candidate)
-- Orb types: heavy, fast, shielded (needs 2 hits), repelled-immune.
+### 5.8 Polarity (experimental, in build)
+- Two poles with opposite affinity: the `+BAR_HALF` pole attracts **amber** orbs (pol 0), the `-BAR_HALF` pole attracts **blue** orbs (pol 1).
+- The matching pole attracts; the opposite pole weakly repels. Only the matching pole can catch.
+- Rotation therefore matters: present the correct pole to each orb; the wrong pole shoves it away.
+
+### 5.9 Core regen (experimental, in build)
+- Absorbing a caught orb heals the core (`CORE_REGEN`, capped at 100), giving catches a defensive payoff.
+
+### 5.10 Overload / overheat (experimental, in build)
+- Above `OVERLOAD_MASS` the magnet overheats: **attraction is disabled** and the HUD shows a warning (`Mass 3.xx !` + “OVERHEAT”).
+- If overheat persists for `OVERHEAT_VENT` seconds it **vents**: all stuck orbs are flung off and an explosion fires (angular kick to the magnet).
+- Shedding (spinning) back below the threshold cools it.
+
+### 5.11 Volatile orbs & explosions (experimental, in build)
+- Some orbs are **volatile** (red ring) and detonate on pole/core contact instead of sticking.
+- An explosion applies a radial impulse to nearby orbs, an **angular kick to the magnet**, and damages the core if close.
+- Goal: make slinging/repelled orbs kinetic — chain reactions are desirable.
+
+### 5.12 Future mechanics (candidate)
+- Orb types: heavy, fast, shielded (needs 2 hits).
 - Polarity toggle (only if a button verb is added).
-- Core regen / repair pickups.
-- "Overload" state: near max capacity the magnet wobbles/jitters.
+- Combo/multipliers for chain explosions.
+- Overload variants: blown pole (disabled side) vs. temporary loss of attraction (current).
 
 ## 6. Force feedback
 
@@ -142,6 +160,20 @@ Low hum whose pitch/volume tracks `Mass`; metallic ping on catch; whoosh on shed
 | Health / hit | 100 / 12 | core durability |
 | Spawn | 1.6 → 0.45 s | interval over time |
 | Orb speed | 55 → 205 px/s | over time |
+
+### Experimental parameters
+
+| Constant | Value | Meaning |
+| --- | --- | --- |
+| `POLARITY` | true | poles attract their colour, repel the other |
+| `CORE_REGEN` | 1.2 | health restored per absorbed orb |
+| `OVERLOAD_MASS` | 3.0 | overheat threshold (inertia) |
+| `OVERHEAT_VENT` | 3.0 s | continuous overheat before venting |
+| `VOLATILE_CHANCE` | 0.18 | fraction of orbs that are volatile |
+| `EXPLOSION_R` | 95 px | blast radius |
+| `EXPLOSION_FORCE` | 850 | radial impulse |
+| `EXPLOSION_TORQUE` | 5 rad/s | angular kick to the magnet |
+| `EXPLOSION_DAMAGE` | 7 | core damage if close |
 
 Tuning goals: ~30–45 s to first "heavy" feel; shedding should be attainable in one committed spin; no death spiral.
 
