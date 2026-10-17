@@ -159,13 +159,16 @@ const poles = () => [
 
 function spawnOrb() {
   const a = Math.random() * TAU;
-  const r = Math.max(W, H) * 0.62;
+  const rx = W / 2 + 60, ry = H / 2 + 60;
+  const x = CX + Math.cos(a) * rx;
+  const y = CY + Math.sin(a) * ry;
+  const dx = CX - x, dy = CY - y;
+  const d = Math.hypot(dx, dy) || 1;
   const speed = 55 + Math.min(difficulty * 7, 150);
   orbs.push({
-    x: CX + Math.cos(a) * r,
-    y: CY + Math.sin(a) * r,
-    vx: -Math.cos(a) * speed,
-    vy: -Math.sin(a) * speed,
+    x, y,
+    vx: (dx / d) * speed,
+    vy: (dy / d) * speed,
     r: 12,
     pol: Math.random() < 0.5 ? 0 : 1,
     volatile: Math.random() < VOLATILE_CHANCE,
