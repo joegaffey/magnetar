@@ -31,9 +31,9 @@ window.addEventListener('resize', resize);
 const BAR_HALF = 85;
 const POLE_R = 22;             // surface-contact catch radius
 const ATTRACT_R = 150;
-const PULL = 760;
-const REPEL = 1.3;             // opposite pole push (stronger than pull)
-const REPEL_RANGE = ATTRACT_R * 1.6;
+const PULL = 480;
+const REPEL = 0.5;             // opposite pole push
+const REPEL_RANGE = ATTRACT_R * 1.2;
 const K_TORQUE = 170;
 const D_TORQUE = 17;
 const BASE_I = 1.0;
