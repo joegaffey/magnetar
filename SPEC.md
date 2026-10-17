@@ -82,7 +82,8 @@ Secondary: **hard capacity** — if `stuck ≥ MAX_STUCK`, the oldest orb is eje
 
 ### 5.8 Polarity (experimental, in build)
 - Two poles with opposite affinity: the `+BAR_HALF` pole attracts **amber** orbs (pol 0), the `-BAR_HALF` pole attracts **blue** orbs (pol 1).
-- The matching pole attracts; the opposite pole weakly repels. Only the matching pole can catch.
+- The matching pole attracts; the opposite pole repels. Only the matching pole can catch.
+- The **core attracts all orbs** (gravity well); the poles are the player's tool to intercept and protect it, so positioning is the skill.
 - Rotation therefore matters: present the correct pole to each orb; the wrong pole shoves it away.
 
 ### 5.9 Core regeneration / absorption (in build)
@@ -167,8 +168,8 @@ Low hum whose pitch/volume tracks `Mass`; metallic ping on catch; whoosh on shed
 | `SHED_ACCEL` | 5200 | centrifugal detach threshold (`ω²·r`) |
 | `SHED_INTERVAL` | 0.12 s | min time between shed orbs |
 | `CORE_R` | 20 | core radius |
-| `CORE_PULL` | 180 | core gravity-well acceleration on free orbs |
-| `MAX_ORB_SPEED` | 320 px/s | free-orb speed cap |
+| `CORE_PULL` | 320 | core gravity-well acceleration on all free orbs |
+| `MAX_ORB_SPEED` | 400 px/s | free-orb speed cap |
 | Health / hit | 100 / 12 | core durability |
 | Spawn | 1.6 → 0.45 s | interval over time |
 | Orb speed | 55 → 205 px/s | over time |

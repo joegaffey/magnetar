@@ -42,8 +42,8 @@ const MAX_STUCK = 14;
 const SHED_ACCEL = 5200;       // w^2 * r threshold for centrifugal shed
 const SHED_INTERVAL = 0.12;    // seconds between shed orbs
 const CORE_R = 20;
-const CORE_PULL = 180;         // acceleration of free orbs toward the core
-const MAX_ORB_SPEED = 320;
+const CORE_PULL = 320;         // acceleration of free orbs toward the core (all orbs)
+const MAX_ORB_SPEED = 400;
 const FFB_DEADZONE = 0.05;
 
 // polarity / absorption
