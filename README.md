@@ -1,5 +1,7 @@
 # Magnetar
 
+**Play:** https://joegaffey.com/magnetar/
+
 A one-axis survival game about catching iron orbs on a rotating magnet while they spiral into a black hole.
 
 Every orb that sticks adds mass — the magnet lags and becomes harder to control. Left alone, stuck orbs are slowly absorbed into the black hole, feeding it and restoring its strength. Grab too eagerly or spin too fast and you'll overload the magnet or shed your catch before it pays off.
