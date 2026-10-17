@@ -10,8 +10,22 @@ const massEl = document.getElementById('mass');
 const scoreEl = document.getElementById('score');
 const ffbEl = document.getElementById('ffb');
 
-const W = canvas.width, H = canvas.height;
-const CX = W / 2, CY = H / 2;
+let W = 0, H = 0, CX = 0, CY = 0, DPR = 1;
+
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width = Math.round(W * DPR);
+  canvas.height = Math.round(H * DPR);
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  CX = W / 2;
+  CY = H / 2;
+}
+resize();
+window.addEventListener('resize', resize);
 
 // magnet
 const BAR_HALF = 85;
@@ -447,4 +461,5 @@ canvas.addEventListener('mousemove', (e) => {
 
 input.angle = 0;
 syncHud();
+reset();
 requestAnimationFrame(frame);

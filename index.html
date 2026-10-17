@@ -7,8 +7,8 @@
     <title>Magnetar</title>
     <style>
       :root {
-        --bg: #0d0f14;
-        --panel: #161a21;
+        --bg: #05060a;
+        --panel: #12161d;
         --border: #262c37;
         --text: #e8ecf3;
         --muted: #95a0b3;
@@ -16,61 +16,51 @@
         --accent-2: #7aa7ff;
       }
       * { box-sizing: border-box; }
-      html, body { margin: 0; padding: 0; }
-      body {
-        background: radial-gradient(1200px 600px at 50% -10%, #16203a 0%, var(--bg) 60%) fixed;
-        color: var(--text);
-        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-        min-height: 100vh;
-        display: flex; flex-direction: column; align-items: center;
-        padding: 24px 16px 40px;
-      }
-      h1 { margin: 0 0 4px; font-size: 1.5rem; }
-      p.sub { margin: 0 0 16px; color: var(--muted); font-size: .9rem; text-align: center; max-width: 720px; }
-      .bar { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; justify-content: center; margin-bottom: 12px; }
+      html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); }
+      body { color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+      canvas { position: fixed; inset: 0; display: block; }
+
+      .ui { position: fixed; z-index: 10; }
+      .hud { top: 12px; left: 14px; display: flex; gap: 16px; flex-wrap: wrap; font-variant-numeric: tabular-nums; font-size: .88rem; color: var(--muted); }
+      .hud b { color: var(--text); }
+      .hud .brand { color: var(--accent-2); font-weight: 800; letter-spacing: .12em; }
+
+      .topbar { top: 12px; right: 14px; display: flex; gap: 10px; align-items: center; }
       button {
         appearance: none; border: 0; cursor: pointer;
         background: linear-gradient(180deg, var(--accent-2), var(--accent));
-        color: #08111f; font-weight: 700; font-size: .9rem;
-        padding: 10px 22px; border-radius: 999px;
-        box-shadow: 0 8px 22px rgba(79, 140, 255, .35);
+        color: #08111f; font-weight: 700; font-size: .85rem;
+        padding: 8px 18px; border-radius: 999px;
+        box-shadow: 0 6px 18px rgba(79, 140, 255, .3);
       }
-      button.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); box-shadow: none; font-weight: 600; }
+      button.ghost { background: rgba(18, 22, 29, .8); color: var(--text); border: 1px solid var(--border); box-shadow: none; font-weight: 600; }
       button.ghost:hover { border-color: var(--accent); color: var(--accent-2); }
-      #status { color: var(--muted); font-size: .88rem; }
-      .hud { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; font-variant-numeric: tabular-nums; margin-bottom: 10px; color: var(--muted); font-size: .92rem; }
-      .hud b { color: var(--text); }
-      .legend { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; color: var(--muted); font-size: .8rem; margin: 0 0 12px; }
+      #status { color: var(--muted); font-size: .8rem; max-width: 260px; }
+
+      .legend { bottom: 12px; left: 14px; display: flex; gap: 16px; flex-wrap: wrap; color: var(--muted); font-size: .78rem; }
       .legend span { display: inline-flex; align-items: center; gap: 6px; }
       .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
       .dot.amber { background: #e0a04a; }
       .dot.blue { background: #7aa7ff; }
       .dot.volatile { background: #e0a04a; box-shadow: 0 0 0 2px #ff5a5f; }
-      .wrap { position: relative; }
-      canvas { display: block; background: #0b0d12; border: 1px solid var(--border); border-radius: 14px; max-width: 100%; height: auto; cursor: crosshair; }
+
+      .hint { bottom: 12px; right: 14px; color: var(--muted); font-size: .8rem; text-align: right; }
+
       #overlay {
-        position: absolute; inset: 0; display: flex; flex-direction: column; gap: 12px;
-        align-items: center; justify-content: center; text-align: center;
-        background: rgba(11, 13, 18, .74); border-radius: 14px; backdrop-filter: blur(2px);
-        padding: 24px;
+        position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
+        background: rgba(5, 6, 10, .72); backdrop-filter: blur(2px); padding: 24px;
       }
-      #overlay h2 { margin: 0; font-size: 1.4rem; }
-      #overlay p { margin: 0; color: var(--muted); max-width: 460px; }
+      #overlay .card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 28px 32px; text-align: center; max-width: 440px; }
+      #overlay h2 { margin: 0 0 8px; font-size: 1.4rem; }
+      #overlay p { margin: 0 0 18px; color: var(--muted); font-size: .92rem; }
       .hidden { display: none !important; }
-      footer { margin-top: 22px; color: var(--muted); font-size: .8rem; }
     </style>
   </head>
   <body>
-    <h1>Magnetar</h1>
-    <p class="sub">Catch iron orbs on the rotating magnet to protect the core, but each orb adds weight and makes the magnet sluggish. Spin fast to shed them. Survive the escalation.</p>
+    <canvas id="game"></canvas>
 
-    <div class="bar">
-      <button id="connectButton">Connect wheel</button>
-      <button id="restartButton" class="ghost">Restart</button>
-      <span id="status">Keys / mouse ready · wheel optional</span>
-    </div>
-
-    <div class="hud">
+    <div class="ui hud">
+      <span class="brand">MAGNETAR</span>
       <span>Health <b id="health">100</b></span>
       <span>Mass <b id="mass">1.00</b></span>
       <span>Score <b id="score">0</b></span>
@@ -78,22 +68,27 @@
       <span>FFB <b id="ffb">—</b></span>
     </div>
 
-    <div class="legend">
+    <div class="ui topbar">
+      <button id="connectButton">Connect wheel</button>
+      <button id="restartButton" class="ghost">Restart</button>
+      <span id="status">Keys / mouse ready · wheel optional</span>
+    </div>
+
+    <div class="ui legend">
       <span><i class="dot amber"></i>amber orb → amber pole</span>
       <span><i class="dot blue"></i>blue orb → blue pole</span>
       <span><i class="dot volatile"></i>volatile — explodes on contact</span>
     </div>
 
-    <div class="wrap">
-      <canvas id="game" width="960" height="600"></canvas>
-      <div id="overlay">
-        <h2>Magnetar</h2>
-        <p>Turn the wheel, hold <b>&larr;</b>/<b>&rarr;</b> (or A/D), or move the mouse to rotate the magnet. Catch orbs on the poles; spin to shed the weight. Don't let them reach the core.</p>
-        <button>Start</button>
+    <div class="ui hint">wheel · ←/→ or A/D · mouse</div>
+
+    <div id="overlay" class="hidden">
+      <div class="card">
+        <h2>Core breached</h2>
+        <p>Score: 0.</p>
+        <button>Restart</button>
       </div>
     </div>
-
-    <footer>Wheel FFB resists rotation in proportion to the magnet's mass.</footer>
 
     <script type="module" src="game.js"></script>
   </body>
