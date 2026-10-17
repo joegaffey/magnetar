@@ -1,40 +1,59 @@
 # Magnetar
 
-A rotation-controlled survival game built on the [`webhid-wheel`](../webhid-wheel) library.
+A one-axis survival game about catching iron orbs on a rotating magnet while they spiral into a black hole.
 
-Catch iron orbs on a rotating magnet to protect the core. Each stuck orb adds mass (the magnet lags and the wheel gets heavier), but is slowly absorbed into the core, restoring its strength. **Avoid spinning too fast** — that sheds orbs before they can be absorbed. Difficulty escalates.
+Every orb that sticks adds mass — the magnet lags and becomes harder to control. Left alone, stuck orbs are slowly absorbed into the black hole, feeding it and restoring its strength. Grab too eagerly or spin too fast and you'll overload the magnet or shed your catch before it pays off.
 
-## Controls
+## Play
 
-One axis only — no buttons required:
-
-- **Wheel** — turn it (optional; force feedback when connected).
-- **Keyboard** — hold **←/→** or **A/D** to rotate continuously.
-- **Mouse** — move the pointer across the canvas.
-
-The input source is auto-selected by whichever you used last. Wheel FFB is only active while the wheel is the source.
+- **Rotate the magnet** with `←/→` (or `A/D`), or move the mouse.
+- Present the **matching pole** (amber ↔ amber, blue ↔ blue) to catch an orb; the opposite pole repels it.
+- Let caught orbs **be absorbed** to restore the core.
+- **Avoid spinning fast** — it sheds orbs before they can be absorbed.
+- Keep orbs from reaching the core.
 
 ## Mechanics
 
-- **Catch:** orbs are pulled to the nearest pole; contact sticks them.
-- **Weight:** stuck orbs raise the magnet's angular inertia (shown as `Mass`).
-- **Absorb:** stuck orbs slowly shrink, feeding the core and restoring `Health` — this is the intended payoff.
-- **Shed (avoid):** spinning too fast flings stuck orbs off before they can be absorbed. There's also a hard capacity fallback.
-- **Threat:** orbs that reach the core damage `Health`.
-- **Escalation:** spawn rate and orb speed increase over time.
+- **Catch:** orbs are pulled to the poles; contact sticks them.
+- **Polarity:** one pole attracts amber orbs, the other blue; the wrong pole pushes them away.
+- **Core gravity:** the black hole pulls every orb toward the centre, so positioning matters.
+- **Weight:** each stuck orb adds angular inertia (HUD `Mass`), making the magnet sluggish and overshooty.
+- **Absorb:** stuck orbs slowly shrink and feed the core, restoring `Health` and removing their mass.
+- **Overheat:** above a mass threshold the magnet loses attraction; if it stays hot it vents in a burst.
+- **Volatile orbs:** some detonate on contact — blast waves shove nearby orbs and kick the magnet. A volatile orb hitting the core is especially bad.
+- **Escalation:** spawn rate and orb speed climb over time.
+
+## Force-feedback wheel support
+
+Magnetar is built to be played with a real **force-feedback steering wheel**, with no drivers, via the [**webhid-wheel**](https://github.com/joegaffey/webhid-wheel) project.
+
+Click **Connect wheel** and pick your wheelbase — it becomes the steering axis, and its FFB reflects the magnet's mass and rotation (the heavier it gets, the heavier the wheel feels). Keyboard and mouse always work, so a wheel is entirely optional and the game never requires force feedback.
 
 ## Run
 
-The page imports the sibling library via `../webhid-wheel/webhid-wheel.js`, so serve the parent folder and open the game path:
+The page imports the sibling library at `../webhid-wheel/webhid-wheel.js`, so serve the folder containing both repos and open the game path:
 
 ```sh
-# from the folder containing `webhid-wheel/` and `magnetar/`
+# from the folder that contains `webhid-wheel/` and `magnetar/`
 npx serve ..
-# open http://localhost:3000/magnetar/
+# then open http://localhost:3000/magnetar/
 ```
 
 Use a Chromium-based browser with WebHID for the wheel; keyboard and mouse work in any modern browser.
 
-## Tuning (`game.js`)
+## Tuning
 
-`BAR_HALF`, `POLE_R`, `ATTRACT_R`, `PULL`, `K_TORQUE`/`D_TORQUE`, `ORB_MASS`, `MAX_STUCK`, `SHED_OMEGA`, and the FFB gain in `updateFfb`.
+Most feel lives in `game.js`:
+
+- Magnet: `K_TORQUE`, `D_TORQUE`, `BASE_I`, `ORB_MASS`.
+- Orbs: `CORE_PULL`, `ORB_DRAG`, `MAX_ORB_SPEED`, spawn rate/speed.
+- Poles: `BAR_HALF`, `ATTRACT_R`, `POLE_R`, `PULL`, `REPEL`, `REPEL_RANGE`.
+- Absorption: `ABSORB_TIME`, `HEAL_PER_ORB`.
+- Overload / shedding: `OVERLOAD_MASS`, `OVERHEAT_VENT`, `SHED_ACCEL`, `SHED_INTERVAL`.
+- Volatile orbs: `VOLATILE_CHANCE`, `EXPLOSION_*`.
+
+See [`SPEC.md`](./SPEC.md) for the full design notes and parameter table.
+
+## Credits
+
+Built on [webhid-wheel](https://github.com/joegaffey/webhid-wheel). MIT.
