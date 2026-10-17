@@ -85,8 +85,10 @@ Secondary: **hard capacity** — if `stuck ≥ MAX_STUCK`, the oldest orb is eje
 - The matching pole attracts; the opposite pole weakly repels. Only the matching pole can catch.
 - Rotation therefore matters: present the correct pole to each orb; the wrong pole shoves it away.
 
-### 5.9 Core regen (experimental, in build)
-- Absorbing a caught orb heals the core (`CORE_REGEN`, capped at 100), giving catches a defensive payoff.
+### 5.9 Core regeneration / absorption (in build)
+- A caught orb sticks at full size, then **slowly shrinks** over `ABSORB_TIME`, feeding particles into the centre.
+- Absorption heals the core gradually (up to `HEAL_PER_ORB` per orb, capped 100) and **removes the orb's mass** once fully absorbed.
+- More absorbing orbs = denser energy flow into the black hole (and a safer but lighter magnet).
 
 ### 5.10 Overload / overheat (experimental, in build)
 - Above `OVERLOAD_MASS` the magnet overheats: **attraction is disabled** and the HUD shows a warning (`Mass 3.xx !` + “OVERHEAT”).
@@ -132,7 +134,7 @@ Secondary: **hard capacity** — if `stuck ≥ MAX_STUCK`, the oldest orb is eje
 ### Shapes & effects
 - **Glow:** pre-rendered radial "bloom" sprites drawn additively behind orbs, poles and the core (cheap neon).
 - **Black hole:** dark event horizon at the centre with a glowing accretion/health ring (no extra rings/lines).
-- **Bridges:** the poles are connected to the event horizon by a stream of glowing particles — no solid bar or drawn lines.
+- **Bridges:** glowing particles flow **inward** from each pole to the event horizon (no solid bar or drawn lines); absorbing orbs add to the flow.
 - **Orbs:** glowing circles; volatile orbs get a red ring.
 - **Stuck orbs:** clustered on the pole with a glow; gentle pulse.
 - **Catch:** particle burst at the contact point (reads as a real hit).
@@ -175,7 +177,9 @@ Low hum whose pitch/volume tracks `Mass`; metallic ping on catch; whoosh on shed
 | Constant | Value | Meaning |
 | --- | --- | --- |
 | `POLARITY` | true | poles attract their colour, repel the other |
-| `CORE_REGEN` | 1.2 | health restored per absorbed orb |
+| `ORB_SIZE` | 8 px | stuck orb render radius |
+| `ABSORB_TIME` | 4.0 s | time for a stuck orb to be fully absorbed |
+| `HEAL_PER_ORB` | 2.0 | health restored per absorbed orb |
 | `OVERLOAD_MASS` | 3.0 | overheat threshold (inertia) |
 | `OVERHEAT_VENT` | 3.0 s | continuous overheat before venting |
 | `VOLATILE_CHANCE` | 0.18 | fraction of orbs that are volatile |

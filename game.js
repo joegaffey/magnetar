@@ -48,7 +48,9 @@ const FFB_DEADZONE = 0.05;
 
 // polarity / absorption
 const POLARITY = true;
-const CORE_REGEN = 1.2;
+const ORB_SIZE = 8;            // render radius while stuck
+const ABSORB_TIME = 4.0;       // seconds for a stuck orb to be absorbed
+const HEAL_PER_ORB = 2.0;      // total health restored per absorbed orb
 
 // overload
 const OVERLOAD_MASS = 3.0;
@@ -193,10 +195,9 @@ function catchOrb(orb) {
   if (stuck.length >= MAX_STUCK) shedOne(0, true);
   const dx = orb.x - CX, dy = orb.y - CY;
   const c = Math.cos(-magnet.phi), s = Math.sin(-magnet.phi);
-  stuck.push({ lx: dx * c - dy * s, ly: dx * s + dy * c, mass: ORB_MASS, pol: orb.pol });
+  stuck.push({ lx: dx * c - dy * s, ly: dx * s + dy * c, mass: ORB_MASS, pol: orb.pol, size: ORB_SIZE });
   caught++;
   score += 1;
-  health = Math.min(100, health + CORE_REGEN);
   spawnParticles(orb.x, orb.y, ORB_COLORS[orb.pol], 12, 220);
   jolt = 0.09;
   joltDir = Math.sign(orb.x - CX) || 1;
@@ -252,6 +253,16 @@ function step(dt) {
   const torque = K_TORQUE * (target - magnet.phi) - D_TORQUE * magnet.omega;
   magnet.omega += (torque / I) * dt;
   magnet.phi += magnet.omega * dt;
+
+  // stuck orbs are slowly absorbed: shrink, feed particles to the core, heal
+  for (let i = stuck.length - 1; i >= 0; i--) {
+    const o = stuck[i];
+    const ds = Math.min(o.size, (ORB_SIZE / ABSORB_TIME) * dt);
+    o.size -= ds;
+    health = Math.min(100, health + (HEAL_PER_ORB / ORB_SIZE) * ds);
+    if (Math.random() < ds * 3) spawnInwardAt(o);
+    if (o.size <= 0.3) stuck.splice(i, 1);
+  }
 
   // --- gradual centrifugal shedding ---
   shedCooldown -= dt;
@@ -395,20 +406,38 @@ function spawnStream() {
     const px = -uy, py = ux;
     const color = ORB_COLORS[s];
     for (let k = 0; k < 2; k++) {
-      const f = Math.random() * 0.9;
+      const f = 0.15 + Math.random() * 0.8;
       const jitter = (Math.random() - 0.5) * 4;
-      const drift = 14 + Math.random() * 20;
+      const drift = 40 + Math.random() * 50;
       const life = 0.4 + Math.random() * 0.4;
       streams.push({
         x: CX + ux * len * f + px * jitter,
         y: CY + uy * len * f + py * jitter,
-        vx: ux * drift + px * (Math.random() - 0.5) * 6,
-        vy: uy * drift + py * (Math.random() - 0.5) * 6,
+        vx: -ux * drift + px * (Math.random() - 0.5) * 6,
+        vy: -uy * drift + py * (Math.random() - 0.5) * 6,
         ux, uy, len,
         life, max: life, color, size: 0.8 + Math.random() * 0.8
       });
     }
   }
+}
+
+function spawnInwardAt(o) {
+  const c = Math.cos(magnet.phi), s = Math.sin(magnet.phi);
+  const wx = CX + o.lx * c - o.ly * s;
+  const wy = CY + o.lx * s + o.ly * c;
+  const dx = CX - wx, dy = CY - wy;
+  const len = Math.hypot(dx, dy) || 1;
+  const ux = dx / len, uy = dy / len;
+  const color = ORB_COLORS[o.pol];
+  const life = 0.4 + Math.random() * 0.3;
+  streams.push({
+    x: wx, y: wy,
+    vx: ux * (60 + Math.random() * 40),
+    vy: uy * (60 + Math.random() * 40),
+    ux, uy, len,
+    life, max: life, color, size: 1 + Math.random() * 0.8
+  });
 }
 
 function updateStreams(dt) {
@@ -418,8 +447,8 @@ function updateStreams(dt) {
     const p = streams[i];
     p.x += p.vx * dt; p.y += p.vy * dt;
     p.life -= dt;
-    const proj = (p.x - CX) * p.ux + (p.y - CY) * p.uy;
-    if (p.life <= 0 || proj > p.len - 12 || proj < -4) streams.splice(i, 1);
+    const dc = Math.hypot(p.x - CX, p.y - CY);
+    if (p.life <= 0 || dc < 14 || dc > p.len + 10) streams.splice(i, 1);
   }
 }
 
@@ -507,8 +536,9 @@ function render() {
   for (const o of stuck) {
     const wx = CX + o.lx * c - o.ly * s;
     const wy = CY + o.lx * s + o.ly * c;
-    drawGlow(wx, wy, 22, ORB_COLORS[o.pol], 0.6);
-    ctx.beginPath(); ctx.arc(wx, wy, 8, 0, TAU);
+    const sz = o.size !== undefined ? o.size : ORB_SIZE;
+    drawGlow(wx, wy, sz * 2.7, ORB_COLORS[o.pol], 0.6);
+    ctx.beginPath(); ctx.arc(wx, wy, sz, 0, TAU);
     ctx.fillStyle = ORB_COLORS[o.pol]; ctx.fill();
   }
 
