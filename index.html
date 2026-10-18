@@ -81,11 +81,20 @@
         box-shadow: 0 0 8px rgba(34, 225, 255, .15);
       }
       button.ghost:hover { border-color: var(--accent); color: #ffffff; box-shadow: 0 0 16px rgba(34, 225, 255, .50); }
-      #connectButton {
+      #connectButton.hero {
         background: var(--accent); color: #02141a; border-color: #aef7ff; text-shadow: none;
         box-shadow: 0 0 18px rgba(34, 225, 255, .75), 0 0 38px rgba(34, 225, 255, .35);
       }
-      #connectButton:hover { background: #8df4ff; }
+      #connectButton.hero:hover { background: #8df4ff; }
+      #connectButton:disabled { opacity: .6; cursor: default; }
+      .wheel-chip {
+        display: inline-flex; align-items: center; max-width: 190px; padding: 4px 8px;
+        border: 1px solid rgba(34, 225, 255, .25); border-radius: 2px;
+        color: var(--muted); font-size: .66rem; font-weight: 800; letter-spacing: .09em;
+        text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        text-shadow: 0 0 6px rgba(34, 225, 255, .55);
+      }
+      #wheelSettingsGroup { display: grid; gap: 11px; }
       #status { color: var(--accent-2); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; max-width: 260px; text-shadow: 0 0 8px rgba(125, 252, 255, .6); }
 
       .legend {
@@ -163,8 +172,9 @@
 
       @media (max-width: 860px) {
         .topui { flex-direction: column-reverse; align-items: center; gap: 8px; }
-        .topbar { justify-content: center; flex-wrap: nowrap; gap: 8px; }
+        .topbar { justify-content: center; flex-wrap: wrap; gap: 8px; width: 100%; max-width: 100%; }
         .topbar button { padding: 6px 10px; font-size: .62rem; letter-spacing: .10em; white-space: nowrap; }
+        .wheel-chip { max-width: 116px; padding: 4px 6px; font-size: .58rem; letter-spacing: .05em; }
         #status { display: none; }
         .hud { justify-content: center; gap: 6px 14px; font-size: .66rem; }
         .hud .brand { display: none; }
@@ -189,10 +199,11 @@
       </div>
 
       <div class="topbar">
-        <button id="connectButton">Connect wheel</button>
+        <button id="connectButton" title="Connect a wheel or flight stick">Connect wheel</button>
+        <span id="wheelChip" class="wheel-chip hidden"></span>
         <button id="wheelSettingsBtn" class="ghost">Settings</button>
         <button id="restartButton" class="ghost">Restart</button>
-        <span id="status">Keys / mouse ready · wheel optional</span>
+        <span id="status">Keys / mouse ready · wheel/stick optional</span>
       </div>
     </div>
 
@@ -221,16 +232,19 @@
           <input type="range" id="music" min="0" max="100" value="55">
           <span id="musicVal">55</span>
         </div>
-        <div class="section">Wheel</div>
-        <div class="row">
-          <label for="ffbStrength">FFB</label>
-          <input type="range" id="ffbStrength" min="0" max="100" value="25">
-          <span id="ffbStrengthVal">25%</span>
-        </div>
-        <div class="row">
-          <label for="wheelRange">Rotation</label>
-          <input type="range" id="wheelRange" min="180" max="1080" step="30" value="900">
-          <span id="wheelRangeVal">900°</span>
+        <div id="wheelSettingsGroup">
+          <div class="section">Wheel / stick</div>
+          <div class="row">
+            <label for="ffbStrength">FFB</label>
+            <input type="range" id="ffbStrength" min="0" max="100" value="25">
+            <span id="ffbStrengthVal">25%</span>
+          </div>
+          <div class="row">
+            <label for="wheelRange">Rotation</label>
+            <input type="range" id="wheelRange" min="180" max="1080" step="30" value="900">
+            <span id="wheelRangeVal">900°</span>
+          </div>
+          <button id="disconnectButton" class="ghost hidden">Disconnect wheel</button>
         </div>
       </div>
     </div>
@@ -251,6 +265,6 @@
       </div>
     </div>
 
-    <script type="module" src="game.js?v=20261018x"></script>
+    <script type="module" src="game.js?v=20261018af"></script>
   </body>
 </html>

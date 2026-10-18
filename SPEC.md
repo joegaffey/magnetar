@@ -29,7 +29,7 @@ A single abstract value: **target angle** `θ` in degrees (may be unbounded for 
 
 | Source | Mapping | FFB | Notes |
 | --- | --- | --- | --- |
-| Wheel (WebHID) | `wheel.rotation` (absolute, ±maxRotation/2) | Yes | Optional; auto-selected when moved |
+| Wheel / flight stick (WebHID) | absolute axis rotation (±maxRotation/2) | Yes (device-dependent) | Optional; auto-selected when moved |
 | Keyboard | hold ←/→ or A/D, integrate ±rate (unbounded) | No | Best for continuous spin |
 | Mouse | pointer X → absolute angle (bounded ±range) | No | Simple aiming |
 | Touch | drag delta → unbounded angle; anchors on touch-down | No | Mobile/tablet; sensitivity adjustable |
@@ -229,8 +229,8 @@ Tuning goals: ~30–45 s to first "heavy" feel; fast spins naturally shed the ou
 - **Full-viewport canvas**; HUD and controls overlay on top (no letterboxing).
 - **Start gate:** a help overlay with controls, the overload warning, and a **Start** button; tapping it begins play (no auto-start). The overlay scrolls and compacts on short/landscape screens. On failure the same overlay shows results + **Restart**.
 - HUD (top-left): neon color-coded `Health`, `Mass`, `Score`, `Input` (source + FFB), `FFB`; brand wordmark.
-- Top-right: **Connect wheel** (optional), **Settings**, **Restart** + status.
-- **Settings modal:** Controls (touch sensitivity), Audio (Mute, Master, Music) and Wheel (FFB strength, rotation range); opening it **pauses play** and stops FFB; close via ×, backdrop or Esc.
+- Top-right: **Connect wheel** (only with WebHID support; regular until a previously authorized device is found, then highlighted), **Settings**, **Restart** + status. While connected, the button is replaced by the device name; **Settings → Wheel / stick** offers disconnect. The browser device picker pauses play until it closes. Without WebHID, wheel/stick controls are hidden.
+- **Settings modal:** Controls (touch sensitivity), Audio (Mute, Master, Music) and Wheel (disconnect when connected, FFB strength, rotation range); opening it **pauses play** and stops FFB; close via ×, backdrop or Esc.
 - Game over overlay: score + caught/unstable counts, **Restart**.
 - Audio suspends when the tab is hidden and resumes on return.
 

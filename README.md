@@ -37,7 +37,7 @@ A small music loop can be layered in later without changing the event API.
 
 Magnetar is built to be played with a real **force-feedback steering wheel**, with no drivers, via the [**webhid-wheel**](https://github.com/joegaffey/webhid-wheel) project.
 
-Click **Connect wheel** and pick your wheelbase — it becomes the steering axis, and its FFB reflects the magnet's mass and rotation (the heavier it gets, the heavier the wheel feels). Use **Settings** (pauses play) to adjust **touch sensitivity**, **FFB strength**, **rotation range** (match your wheel's lock-to-lock for 1:1 steering), **Master/Music** volume and **mute**. Keyboard, mouse and touch always work, so a wheel is entirely optional.
+When WebHID is available, a **Connect wheel** button appears in the top bar. It is a regular secondary action by default and becomes highlighted when a previously authorized device is detected. Opening the browser picker pauses play until it closes. Pick your device — it becomes the steering axis, and its FFB reflects the magnet's mass and rotation (the heavier it gets, the heavier the wheel feels). After connecting, the button is replaced by the device name; use **Settings → Wheel / stick** to disconnect. Use **Settings** (pauses play) to adjust **touch sensitivity**, **FFB strength**, **rotation range** (match your wheel's lock-to-lock for 1:1 steering), **Master/Music** volume and **mute**. Flight sticks exposing a usable HID axis may also work, though FFB support depends on the device. On browsers without WebHID the wheel/stick UI is hidden. Keyboard, mouse and touch always work, so a wheel or stick is entirely optional.
 
 ## Run
 
@@ -46,7 +46,7 @@ npx serve
 # open the URL it prints (e.g. http://localhost:3000)
 ```
 
-Use a Chromium-based browser with WebHID for the wheel; keyboard, mouse and touch work in any modern browser.
+Use a Chromium-based browser with WebHID for wheel/flight-stick input; keyboard, mouse and touch work in any modern browser.
 
 The wheel library is vendored at [`vendor/webhid-wheel.js`](./vendor/webhid-wheel.js) (a copy of [webhid-wheel](https://github.com/joegaffey/webhid-wheel)) so the page is self-contained; refresh it from that repo when the library changes.
 

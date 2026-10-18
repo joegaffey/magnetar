@@ -1,16 +1,22 @@
-import { SteeringInput } from './input.js?v=20261018x';
-import { AudioEngine } from './audio.js?v=20261018x';
+import { SteeringInput } from './input.js?v=20261018af';
+import { AudioEngine } from './audio.js?v=20261018af';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const overlay = document.getElementById('overlay');
 const statusEl = document.getElementById('status');
+const hintEl = document.querySelector('.hint');
 const sourceEl = document.getElementById('source');
 const healthEl = document.getElementById('health');
 const massEl = document.getElementById('mass');
 const scoreEl = document.getElementById('score');
 const ffbEl = document.getElementById('ffb');
 const wheelSettingsBtn = document.getElementById('wheelSettingsBtn');
+const connectButton = document.getElementById('connectButton');
+const wheelChip = document.getElementById('wheelChip');
+const wheelSettingsGroup = document.getElementById('wheelSettingsGroup');
+const disconnectButton = document.getElementById('disconnectButton');
+const webHidSupported = !!(navigator.hid && navigator.hid.requestDevice);
 const ffbStrengthInput = document.getElementById('ffbStrength');
 const ffbStrengthVal = document.getElementById('ffbStrengthVal');
 const wheelRangeInput = document.getElementById('wheelRange');
@@ -115,6 +121,7 @@ let shedCooldown = 0;
 let spinLoad = 0;
 let jolt = 0, joltDir = 0, joltForce = 0;
 let audioAccum = 0;
+let connectingWheel = false;
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const TAU = Math.PI * 2;
@@ -923,15 +930,103 @@ function render() {
   drawOverloadEdges(t);
 }
 
-document.getElementById('connectButton').addEventListener('click', async () => {
-  const dev = await input.connectWheel({
-    ffbStrength: parseInt(ffbStrengthInput.value) / 100,
-    maxRotation: parseInt(wheelRangeInput.value)
-  });
-  if (!dev) { statusEl.textContent = 'Connection cancelled'; return; }
-  statusEl.textContent = dev.productName + (input.wheel.parserName ? ' \u00b7 ' + input.wheel.parserName : '');
+function handleWheelDisconnected() {
+  input.stopFfb();
+  input.wheel = null;
+  input.ffbAvailable = false;
+  if (input.source === 'wheel') input.source = 'keys';
+  statusEl.textContent = webHidSupported ? 'Keys / mouse ready \u00b7 wheel/stick optional' : 'Keys / mouse ready';
+  refreshWheelConnectUI();
   syncHud();
+}
+
+async function refreshWheelConnectUI() {
+  if (!webHidSupported) {
+    connectButton.classList.add('hidden');
+    wheelChip.classList.add('hidden');
+    wheelSettingsGroup.classList.add('hidden');
+    disconnectButton.classList.add('hidden');
+    statusEl.textContent = 'Keys / mouse ready';
+    if (hintEl) hintEl.textContent = '\u2190/\u2192 or A/D \u00b7 mouse \u00b7 touch';
+    return;
+  }
+
+  if (hintEl) hintEl.textContent = 'wheel \u00b7 \u2190/\u2192 or A/D \u00b7 mouse \u00b7 touch';
+  wheelSettingsGroup.classList.remove('hidden');
+  const connected = !!(input.wheel && input.wheel.isConnected);
+  if (connected) {
+    connectButton.classList.add('hidden');
+    connectButton.classList.remove('hero');
+    connectButton.disabled = false;
+    connectButton.textContent = 'Connect wheel';
+    const name = input.wheel.name || 'Wheel';
+    const parser = input.wheel.parserName ? ' \u00b7 ' + input.wheel.parserName : '';
+    wheelChip.textContent = name;
+    wheelChip.title = name + parser;
+    wheelChip.classList.remove('hidden');
+    disconnectButton.classList.remove('hidden');
+    return;
+  }
+
+  wheelChip.classList.add('hidden');
+  disconnectButton.classList.add('hidden');
+  if (connectingWheel) return;
+
+  connectButton.classList.remove('hidden');
+  connectButton.disabled = false;
+  connectButton.textContent = 'Connect wheel';
+  try {
+    const devices = await navigator.hid.getDevices();
+    connectButton.classList.toggle('hero', devices.length > 0);
+  } catch {
+    connectButton.classList.remove('hero');
+  }
+}
+
+connectButton.addEventListener('click', async () => {
+  if (!webHidSupported || connectingWheel) return;
+  const wasPaused = paused;
+  connectingWheel = true;
+  pauseGame();
+  connectButton.disabled = true;
+  connectButton.textContent = 'Connecting\u2026';
+  try {
+    const dev = await input.connectWheel({
+      ffbStrength: parseInt(ffbStrengthInput.value) / 100,
+      maxRotation: parseInt(wheelRangeInput.value)
+    });
+    if (!dev) { statusEl.textContent = 'Connection cancelled'; return; }
+    statusEl.textContent = dev.productName + (input.wheel.parserName ? ' \u00b7 ' + input.wheel.parserName : '');
+    if (input.wheel && input.wheel.on) input.wheel.on('disconnect', handleWheelDisconnected);
+  } catch (err) {
+    statusEl.textContent = 'Wheel connection failed';
+    console.error(err);
+  } finally {
+    connectingWheel = false;
+    connectButton.textContent = 'Connect wheel';
+    connectButton.disabled = false;
+    refreshWheelConnectUI();
+    syncHud();
+    if (!wasPaused) resumeGame();
+  }
 });
+
+disconnectButton.addEventListener('click', async () => {
+  if (!input.wheel) return;
+  try { await input.wheel.disconnect(); } catch { /* noop */ }
+  handleWheelDisconnected();
+});
+
+if (webHidSupported) {
+  navigator.hid.addEventListener('connect', () => refreshWheelConnectUI());
+  navigator.hid.addEventListener('disconnect', (e) => {
+    if (input.wheel && (e.device === input.wheel.device || !input.wheel.isConnected)) {
+      handleWheelDisconnected();
+    } else {
+      refreshWheelConnectUI();
+    }
+  });
+}
 
 function pauseGame() {
   if (paused) return;
@@ -1070,4 +1165,5 @@ canvas.addEventListener('touchcancel', (e) => {
 input.reset();
 running = false;
 syncHud();
+refreshWheelConnectUI();
 requestAnimationFrame(frame);
