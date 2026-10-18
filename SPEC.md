@@ -86,19 +86,21 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
   - base spawn interval `max(0.45, 1.6 − runTime·0.0055)`
   - base orb speed `35 + min(runTime·0.85, 170)`
   - modifiers multiply those values.
-- Modifiers (first pass uses existing orb types):
+- Modifiers:
   - **Normal** — no change
   - **Fast** — faster orbs, slightly fewer spawns
   - **Volatile** — higher unstable chance
   - **Swarm** — 3 orbs per spawn, slower
   - **Polarity** — alternating colours
+  - **Power** — ~50% power orbs, slightly slower
   - **Heavy** — higher mass/damage, slower and larger
-- Intro order is deterministic: Normal → Fast → Volatile → Swarm → Polarity → Heavy. After that, a random modifier is chosen without repeating the previous one.
+- Intro order is deterministic: Normal → Fast → Volatile → Swarm → Polarity → Power → Heavy. After that, a random modifier is chosen without repeating the previous one.
 - A wave banner, permanent HUD `Wave` field and audio cue announce each wave; the lull shows the next modifier.
 
 ### 5.7 Scoring
 - `+1` per catch. Shedding never scores.
-- Wave survival bonus: `5 + 2 × wave` at the end of each wave. Wave reached is shown in the game-over summary. (Planned: survival ticks, combo/multipliers.)
+- Wave survival bonus: `5 + 2 × wave` at the end of each wave. Wave reached is shown in the game-over summary.
+- Power orbs collected at full Health award `+2` / `+4` score instead of healing. (Planned: survival ticks, combo/multipliers.)
 
 ### 5.8 Polarity (experimental, in build)
 - Two poles with opposite affinity: the `+BAR_HALF` pole attracts **amber** orbs (pol 0), the `-BAR_HALF` pole attracts **blue** orbs (pol 1).
@@ -127,7 +129,15 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 - Every hard contact damps spin (`OVERLOAD_SPIN_DAMP`) and halves `spinLoad`, breaking sustained sweeps.
 - This makes quick fast spins viable for shedding, but sustained speed dangerous.
 
-### 5.12 Future mechanics (candidate)
+### 5.12 Power orbs (in build)
+- **Green power orbs** are attracted to **both poles** (`PULL × POWER_PULL_SCALE`, `ATTRACT_R`, `innerFade`) but cannot be caught or repelled.
+- Perpendicular bar alignment lets the two pole pulls cancel along the approach, allowing the orb to slip to the core; parallel alignment pulls it into a pole and detonates it.
+- **Core entry:** heals Health (`POWER_HEAL` / `POWER_UNSTABLE_HEAL`); at full Health, awards `POWER_SCORE` / `POWER_UNSTABLE_SCORE` instead.
+- **Pole contact:** green/white detonation, core damage (`POWER_POLE_DAMAGE` / `POWER_UNSTABLE_POLE_DAMAGE`), blast/knockback, no catch/score.
+- **Unstable power orbs** have a lime/white pulsing ring, heal more, detonate harder, and use a larger blast.
+- Baseline spawn chance `POWER_CHANCE`; `POWER_UNSTABLE_CHANCE` of power orbs are unstable. The **POWER** wave raises the power-orb share.
+
+### 5.13 Future mechanics (candidate)
 - Orb types: heavy, fast, shielded (needs 2 hits).
 - Polarity toggle (only if a button verb is added).
 - Combo/multipliers for chain explosions.
@@ -161,7 +171,7 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 - **Glow:** pre-rendered radial "bloom" sprites drawn additively behind orbs, poles and the core (cheap neon).
 - **Black hole:** dark event horizon at the centre with a glowing accretion/health ring (no extra rings/lines).
 - **Bridges:** glowing particles flow **inward** from each pole to the event horizon (no solid bar or drawn lines). Orbs feed energy **into their pole**, which then forwards it to the centre — never orb → centre directly.
-- **Orbs:** glowing circles; volatile orbs get a red ring.
+- **Orbs:** glowing circles; volatile orbs get a red ring. Power orbs are green; unstable power orbs get a lime/white pulsing ring.
 - **Incoming edge glow:** an orb still outside the viewport casts a soft colored glow from a marker just outside the screen edge (`EDGE_GLOW_OFFSET`), so it reads as an off-screen light source rather than an orb materialising at the edge. It fades in gradually from spawn and reaches full brightness as it reaches the marker (red and faster-pulsing for unstable orbs).
 - **Stuck orbs:** clustered on the pole with a glow; gentle pulse.
 - **Overload:** as spin load builds, a pulsing red glow builds around both poles and a soft red glow grows inward from all four screen edges; at full overload both pulse clearly. Hard contacts add a small orange shock ring (regular) or a full unstable blast (volatile).
@@ -184,6 +194,7 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 - **Stereo panning** by orb X relative to the core; ambient centred.
 - **Bright accents (non-physical):** score blips that rise in pitch with a catch/burst streak, and high hit ticks on pole impacts and core damage, layered over the low thunks.
 - **Wave cue:** a short rising chime announces each wave.
+- **Power pickup:** a bright rising chime when a green power orb reaches the core.
 - **Adaptive generative score:** an original piece cycling four 4-bar sections — D-major I–V–vi–IV, an E-major lift (up a whole step), then D-major vi–IV–I–V and IV–V–vi–V — with warm detuned pads, a shimmering sine arpeggio, soft bass, and a high lead in later sections. Tempo scales with difficulty; sidechain-style ducking under impacts. Inspired by warm, euphoric synth-pop, not a transcription.
 - **Master, Music volume and Mute** in the **Settings** modal, persisted; opening Settings pauses play. AudioContext unlocks on first interaction and suspends when the tab is hidden.
 - Optional later: a small music loop layered on top.
@@ -214,6 +225,14 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 | `OVERLOAD_DRAIN` | 5 /s | core health lost while fully overloaded |
 | `OVERSPEED_VOLATILE_DAMAGE` | 12–24 | unstable hard-catch core damage |
 | `OVERSPEED_REGULAR_DAMAGE` | 8–16 | regular hard-catch core damage |
+| `POWER_CHANCE` | 0.08 | baseline power-orb spawn chance |
+| `POWER_UNSTABLE_CHANCE` | 0.25 | unstable share of power orbs |
+| `POWER_PULL_SCALE` | 0.7 | both-pole attraction scale |
+| `POWER_HEAL` / `POWER_UNSTABLE_HEAL` | 12 / 24 | core Health restored |
+| `POWER_POLE_DAMAGE` / `POWER_UNSTABLE_POLE_DAMAGE` | 10 / 20 | core damage on pole contact |
+| `POWER_BLAST_R` / `POWER_UNSTABLE_BLAST_R` | 65 / 95 px | pole-contact blast radius |
+| `POWER_BLAST_FORCE` / `POWER_UNSTABLE_BLAST_FORCE` | 500 / 850 | pole-contact blast impulse |
+| `POWER_SCORE` / `POWER_UNSTABLE_SCORE` | 2 / 4 | score at full Health |
 | `WAVE_TIME` | 35 s | active wave duration |
 | `WAVE_LULL` | 3 s | no-spawn break between waves |
 | `WAVE_BANNER_TIME` | 1.8 s | wave-start banner duration |
@@ -246,11 +265,13 @@ Tuning goals: ~30–45 s to first "heavy" feel; fast spins naturally shed the ou
 ## 9. UX / onboarding
 
 - **Full-viewport canvas**; HUD and controls overlay on top (no letterboxing).
-- **Start gate:** a help overlay with controls, the overload warning, and a **Start** button; tapping it begins play (no auto-start). The overlay scrolls and compacts on short/landscape screens. On failure the same overlay shows results + **Restart**.
+- **Start gate:** a story-focused intro with **Start** and **Help** buttons; tapping Start begins play (no auto-start). The overlay scrolls and compacts on short/landscape screens. On failure the same overlay shows results + **Restart** and **Help**.
 - **Wave announcement:** a brief, non-blocking canvas banner below the HUD at wave start and during the lull (next modifier), plus an audio chime and HUD `Wave` field.
+- **Help dialog:** consolidates controls and the orb legend (amber/blue polarity, red unstable, green power orbs) plus overload/wave notes. Accessible from the topbar and start/game-over overlays; opening it **pauses play**.
 - HUD (top-left): neon color-coded `Health`, `Mass`, `Score`, `Wave`, `Input` (source + FFB), `FFB`; brand wordmark.
-- Top-right: **Connect wheel** (only with WebHID support; regular until a previously authorized device is found, then highlighted), **Settings**, **Restart** + status. While connected, the button is replaced by the device name; **Settings → Wheel / stick** offers disconnect. The browser device picker pauses play until it closes. Without WebHID, wheel/stick controls are hidden.
+- Top-right: **Connect wheel** (only with WebHID support; regular until a previously authorized device is found, then highlighted), **Settings**, **Help**, **Restart** + status. While connected, the button is replaced by the device name; **Settings → Wheel / stick** offers disconnect. The browser device picker pauses play until it closes. Without WebHID, wheel/stick controls are hidden.
 - **Settings modal:** Controls (touch sensitivity), Audio (Mute, Master, Music) and Wheel (disconnect when connected, FFB strength, rotation range); opening it **pauses play** and stops FFB; close via ×, backdrop or Esc.
+- **Help modal:** controls, orb legend, overload and wave notes; pauses play; close via ×, backdrop or Esc.
 - Game over overlay: score + caught/unstable counts, **Restart**.
 - Audio suspends when the tab is hidden and resumes on return.
 
@@ -267,7 +288,7 @@ Tuning goals: ~30–45 s to first "heavy" feel; fast spins naturally shed the ou
 - **M0 — prototype (done):** magnet, orbs, catch, inertia, shed, core, HUD, wheel/keyboard/mouse.
 - **M1 — feel pass:** tune inertia/shed/attraction; make weight legible; verify wheel FFB.
 - **M2 — art/juice (done):** neon Geometry-Wars palette, bloom, particles, vignette/scanlines, HUD.
-- **M3 — content (in progress):** unstable orbs and timed waves/modifiers done; remaining orb types, combos, more wave variety.
+- **M3 — content (in progress):** unstable orbs, power orbs, and timed waves/modifiers done; remaining orb types, combos, more wave variety.
 - **M4 — inputs (mostly done):** wheel/keyboard/mouse/touch/gamepad + settings/pause.
 
 ## 12. Open questions

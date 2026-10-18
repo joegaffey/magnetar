@@ -1,11 +1,10 @@
-import { SteeringInput } from './input.js?v=20261018al';
-import { AudioEngine } from './audio.js?v=20261018al';
+import { SteeringInput } from './input.js?v=20261018ao';
+import { AudioEngine } from './audio.js?v=20261018ao';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const overlay = document.getElementById('overlay');
 const statusEl = document.getElementById('status');
-const hintEl = document.querySelector('.hint');
 const sourceEl = document.getElementById('source');
 const healthEl = document.getElementById('health');
 const massEl = document.getElementById('mass');
@@ -29,6 +28,10 @@ const musicInput = document.getElementById('music');
 const musicVal = document.getElementById('musicVal');
 const settingsModal = document.getElementById('settingsModal');
 const settingsClose = document.getElementById('settingsClose');
+const helpButton = document.getElementById('helpButton');
+const helpFromStart = document.getElementById('helpFromStart');
+const helpModal = document.getElementById('helpModal');
+const helpClose = document.getElementById('helpClose');
 const touchSensitivityInput = document.getElementById('touchSensitivity');
 const touchSensitivityVal = document.getElementById('touchSensitivityVal');
 
@@ -96,9 +99,10 @@ const WAVE_MODIFIERS = {
   volatile: { label: 'VOLATILE', spawn: 1.1, speed: 1, count: 1, volatileChance: 0.4 },
   swarm: { label: 'SWARM', spawn: 1.8, speed: 0.8, count: 3 },
   polarity: { label: 'POLARITY', spawn: 1, speed: 1, count: 1, alternating: true },
+  power: { label: 'POWER', spawn: 1.1, speed: 0.9, count: 1, powerChance: 0.5 },
   heavy: { label: 'HEAVY ORBS', spawn: 1.2, speed: 0.9, count: 1, energy: 1.5 }
 };
-const WAVE_ORDER = ['normal', 'fast', 'volatile', 'swarm', 'polarity', 'heavy'];
+const WAVE_ORDER = ['normal', 'fast', 'volatile', 'swarm', 'polarity', 'power', 'heavy'];
 
 // polarity / absorption
 const POLARITY = true;
@@ -112,6 +116,23 @@ const EXPLOSION_R = 95;
 const EXPLOSION_FORCE = 850;
 const EXPLOSION_TORQUE = 5;
 const EXPLOSION_DAMAGE = 12;
+
+// power orbs
+const POWER_CHANCE = 0.08;
+const POWER_UNSTABLE_CHANCE = 0.25;
+const POWER_PULL_SCALE = 0.7;
+const POWER_HEAL = 12;
+const POWER_UNSTABLE_HEAL = 24;
+const POWER_POLE_DAMAGE = 10;
+const POWER_UNSTABLE_POLE_DAMAGE = 20;
+const POWER_SCORE = 2;
+const POWER_UNSTABLE_SCORE = 4;
+const POWER_COLOR = '#5dff9b';
+const POWER_UNSTABLE_COLOR = '#d4ff6a';
+const POWER_BLAST_R = 65;
+const POWER_BLAST_FORCE = 500;
+const POWER_UNSTABLE_BLAST_R = 95;
+const POWER_UNSTABLE_BLAST_FORCE = 850;
 
 const storedTouchSensitivity = parseFloat(localStorage.getItem('magnetar-touch-sensitivity'));
 const initialTouchSensitivity = Number.isFinite(storedTouchSensitivity)
@@ -310,11 +331,11 @@ function spawnWaveOrbs() {
       pol = wavePolFlip;
       wavePolFlip = 1 - wavePolFlip;
     }
-    spawnOrb({ speed, energy, pol, volatileChance: mod.volatileChance });
+    spawnOrb({ speed, energy, pol, volatileChance: mod.volatileChance, powerChance: mod.powerChance });
   }
 }
 
-function spawnOrb({ speed = null, energy = 1, pol = null, volatileChance = VOLATILE_CHANCE } = {}) {
+function spawnOrb({ speed = null, energy = 1, pol = null, volatileChance = VOLATILE_CHANCE, powerChance = POWER_CHANCE } = {}) {
   const a = Math.random() * TAU;
   const ux = Math.cos(a), uy = Math.sin(a);
   const lead = 60;
@@ -325,14 +346,19 @@ function spawnOrb({ speed = null, energy = 1, pol = null, volatileChance = VOLAT
   const x = CX + ux * r;
   const y = CY + uy * r;
   const orbSpeed = speed === null ? waveBaseSpeed() : speed;
+  const power = Math.random() < powerChance;
+  const unstable = power && Math.random() < POWER_UNSTABLE_CHANCE;
+  const orbEnergy = power ? 1 : energy;
   orbs.push({
     x, y,
     vx: -ux * orbSpeed,
     vy: -uy * orbSpeed,
-    r: 12 * Math.sqrt(energy),
-    pol: pol === null ? (Math.random() < 0.5 ? 0 : 1) : pol,
-    volatile: Math.random() < volatileChance,
-    energy, noCatch: 0
+    r: 12 * Math.sqrt(orbEnergy),
+    pol: power ? null : (pol === null ? (Math.random() < 0.5 ? 0 : 1) : pol),
+    kind: power ? 'power' : 'iron',
+    unstable,
+    volatile: !power && Math.random() < volatileChance,
+    energy: orbEnergy, noCatch: 0
   });
 }
 
@@ -381,6 +407,38 @@ function powerBurst(x, y, pol) {
     }
   }
   magnet.omega += (x >= CX ? 1 : -1) * EXPLOSION_TORQUE;
+}
+
+function powerDetonate(orb) {
+  const big = orb.unstable;
+  const x = orb.x, y = orb.y;
+  const R = big ? POWER_UNSTABLE_BLAST_R : POWER_BLAST_R;
+  const force = big ? POWER_UNSTABLE_BLAST_FORCE : POWER_BLAST_FORCE;
+  const color = big ? POWER_UNSTABLE_COLOR : POWER_COLOR;
+
+  health -= big ? POWER_UNSTABLE_POLE_DAMAGE : POWER_POLE_DAMAGE;
+  streak = 0;
+  audio.explode(big ? 1.2 : 0.8, panOf(x));
+  audio.damage(panOf(x));
+  explosions.push({ x, y, life: 0.4, max: 0.4, scale: big ? 1.1 : 0.8, color });
+  spawnParticles(x, y, '#eafff2', big ? 18 : 12, 480, 0.8);
+  spawnParticles(x, y, color, big ? 24 : 16, 420, 1.1);
+
+  for (const o of orbs) {
+    if (o === orb) continue;
+    const dx = o.x - x, dy = o.y - y;
+    const d = Math.hypot(dx, dy);
+    if (d < R && d > 0.001) {
+      const f = force * (1 - d / R);
+      o.vx += (dx / d) * f;
+      o.vy += (dy / d) * f;
+    }
+  }
+
+  magnet.omega += (x >= CX ? 1 : -1) * EXPLOSION_TORQUE * (big ? 1.2 : 0.6);
+  jolt = 0.12;
+  joltDir = Math.sign(x - CX) || 1;
+  joltForce = 0.9;
 }
 
 function hardCatch(orb) {
@@ -570,23 +628,36 @@ function step(dt) {
     const coreDist = Math.hypot(o.x - CX, o.y - CY);
     const innerFade = clamp((coreDist - POLE_INNER_REACH) / POLE_R, 0, 1);
 
-    for (const { p, aff } of ps) {
-      const dx = o.x - p.x, dy = o.y - p.y;
-      const d = Math.hypot(dx, dy) || 0.001;
-      const ux = dx / d, uy = dy / d;
-      if (aff === o.pol) {
+    if (o.kind === 'power') {
+      for (const { p } of ps) {
+        const dx = o.x - p.x, dy = o.y - p.y;
+        const d = Math.hypot(dx, dy) || 0.001;
         if (d < ATTRACT_R && innerFade > 0) {
-          const f = PULL * (1 - d / ATTRACT_R) * innerFade;
+          const ux = dx / d, uy = dy / d;
+          const f = PULL * POWER_PULL_SCALE * (1 - d / ATTRACT_R) * innerFade;
           o.vx -= ux * f * dt;
           o.vy -= uy * f * dt;
         }
-        if (d < POLE_R * 3 && Math.random() < dt * 16) {
-          spawnEnergyToPole(o.x, o.y, p, o.pol);
+      }
+    } else {
+      for (const { p, aff } of ps) {
+        const dx = o.x - p.x, dy = o.y - p.y;
+        const d = Math.hypot(dx, dy) || 0.001;
+        const ux = dx / d, uy = dy / d;
+        if (aff === o.pol) {
+          if (d < ATTRACT_R && innerFade > 0) {
+            const f = PULL * (1 - d / ATTRACT_R) * innerFade;
+            o.vx -= ux * f * dt;
+            o.vy -= uy * f * dt;
+          }
+          if (d < POLE_R * 3 && Math.random() < dt * 16) {
+            spawnEnergyToPole(o.x, o.y, p, o.pol);
+          }
+        } else if (d < REPEL_RANGE) {
+          const f = PULL * REPEL * (1 - d / REPEL_RANGE);
+          o.vx += ux * f * dt;
+          o.vy += uy * f * dt;
         }
-      } else if (d < REPEL_RANGE) {
-        const f = PULL * REPEL * (1 - d / REPEL_RANGE);
-        o.vx += ux * f * dt;
-        o.vy += uy * f * dt;
       }
     }
 
@@ -614,12 +685,14 @@ function step(dt) {
     }
 
     let didCatch = false;
-    for (const { p, aff } of ps) {
-      if (aff === o.pol && o.noCatch <= 0 && Math.hypot(o.x - p.x, o.y - p.y) < POLE_R) {
-        catchOrb(o);
-        orbs.splice(i, 1);
-        didCatch = true;
-        break;
+    if (o.kind !== 'power') {
+      for (const { p, aff } of ps) {
+        if (aff === o.pol && o.noCatch <= 0 && Math.hypot(o.x - p.x, o.y - p.y) < POLE_R) {
+          catchOrb(o);
+          orbs.splice(i, 1);
+          didCatch = true;
+          break;
+        }
       }
     }
     if (didCatch) {
@@ -627,22 +700,47 @@ function step(dt) {
       continue;
     }
 
-    if (spinLoad >= 1) {
+    if (o.kind === 'power') {
       let contact = false;
       for (const { p } of ps) {
-        if (Math.hypot(o.x - p.x, o.y - p.y) < POLE_BODY_R + o.r) { contact = true; break; }
+        if (Math.hypot(o.x - p.x, o.y - p.y) < POLE_R) { contact = true; break; }
       }
       if (contact) {
-        hardCatch(o);
+        powerDetonate(o);
         orbs.splice(i, 1);
         if (health <= 0) { gameOver(); return; }
         continue;
       }
+    } else {
+      if (spinLoad >= 1) {
+        let contact = false;
+        for (const { p } of ps) {
+          if (Math.hypot(o.x - p.x, o.y - p.y) < POLE_BODY_R + o.r) { contact = true; break; }
+        }
+        if (contact) {
+          hardCatch(o);
+          orbs.splice(i, 1);
+          if (health <= 0) { gameOver(); return; }
+          continue;
+        }
+      }
+      if (collidePoles(o)) continue;
     }
 
-    if (collidePoles(o)) continue;
-
     if (Math.hypot(o.x - CX, o.y - CY) < CORE_R + o.r) {
+      if (o.kind === 'power') {
+        if (health >= 100) {
+          score += o.unstable ? POWER_UNSTABLE_SCORE : POWER_SCORE;
+        } else {
+          health = Math.min(100, health + (o.unstable ? POWER_UNSTABLE_HEAL : POWER_HEAL));
+        }
+        audio.power(panOf(o.x));
+        explosions.push({ x: o.x, y: o.y, life: 0.35, max: 0.35, scale: 0.7, color: POWER_COLOR });
+        spawnParticles(o.x, o.y, '#eafff2', 12, 360, 0.8);
+        spawnParticles(o.x, o.y, POWER_COLOR, 18, 300, 1.1);
+        orbs.splice(i, 1);
+        continue;
+      }
       streak = 0;
       audio.hit(panOf(o.x), 1.3);
       if (o.volatile) {
@@ -895,15 +993,19 @@ function renderEdgeGlows(t) {
 }
 
 function drawEdgeGlow(hit, o, t, approach) {
+  const power = o.kind === 'power';
+  const unstablePower = power && o.unstable;
   const volatile = o.volatile;
-  const color = volatile ? '#ff5a5f' : ORB_COLORS[o.pol];
+  const bright = volatile || power;
+  const color = power ? (unstablePower ? POWER_UNSTABLE_COLOR : POWER_COLOR) : (volatile ? '#ff5a5f' : ORB_COLORS[o.pol]);
   const full = approach >= 1;
-  const pulse = full ? 1 : 0.78 + 0.22 * (0.5 + 0.5 * Math.sin(t * (volatile ? 12 : 7) + o.x * 0.05 + o.y * 0.04));
-  const alpha = (volatile ? 1 : 0.8) * approach * pulse;
+  const pulse = full ? 1 : 0.78 + 0.22 * (0.5 + 0.5 * Math.sin(t * (bright ? 12 : 7) + o.x * 0.05 + o.y * 0.04));
+  const alpha = (bright ? 1 : 0.8) * approach * pulse;
 
-  drawGlow(hit.x, hit.y, volatile ? 72 : 62, color, alpha * 0.55);
+  drawGlow(hit.x, hit.y, bright ? 72 : 62, color, alpha * 0.55);
   if (volatile) drawGlow(hit.x, hit.y, 50, '#ff5a5f', alpha * 0.5);
-  drawGlow(hit.x, hit.y, volatile ? 28 : 24, color, Math.min(1, alpha * 1.2));
+  if (unstablePower) drawGlow(hit.x, hit.y, 52, POWER_UNSTABLE_COLOR, alpha * 0.5);
+  drawGlow(hit.x, hit.y, bright ? 28 : 24, color, Math.min(1, alpha * 1.2));
 }
 
 function drawOverloadEdges(t) {
@@ -995,11 +1097,24 @@ function render() {
   // orbs (glow + core); off-screen orbs are represented by edge glows
   for (const o of orbs) {
     if (o.x < 0 || o.x > W || o.y < 0 || o.y > H) continue;
-    const col = ORB_COLORS[o.pol];
+    const power = o.kind === 'power';
+    const unstablePower = power && o.unstable;
+    const col = power ? (unstablePower ? POWER_UNSTABLE_COLOR : POWER_COLOR) : ORB_COLORS[o.pol];
     drawGlow(o.x, o.y, o.r * 3, col, 0.55);
     ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, TAU);
     ctx.fillStyle = col; ctx.fill();
-    if (o.volatile) {
+    if (unstablePower) {
+      const pulse = 0.5 + 0.5 * Math.sin(t * 12 + o.x * 0.05);
+      drawGlow(o.x, o.y, o.r * 4.6, POWER_UNSTABLE_COLOR, 0.3 + 0.35 * pulse);
+      ctx.beginPath(); ctx.arc(o.x, o.y, o.r + 5 + pulse * 3, 0, TAU);
+      ctx.strokeStyle = 'rgba(212, 255, 106, ' + (0.55 + 0.4 * pulse) + ')';
+      ctx.lineWidth = 2.5; ctx.stroke();
+      ctx.beginPath(); ctx.arc(o.x, o.y, o.r * 0.42, 0, TAU);
+      ctx.fillStyle = '#eafff2'; ctx.fill();
+    } else if (power) {
+      ctx.beginPath(); ctx.arc(o.x, o.y, o.r * 0.38, 0, TAU);
+      ctx.fillStyle = '#eafff2'; ctx.fill();
+    } else if (o.volatile) {
       const pulse = 0.5 + 0.5 * Math.sin(t * 10 + o.x * 0.05);
       drawGlow(o.x, o.y, o.r * 4.5, '#ff5a5f', 0.3 + 0.35 * pulse);
       ctx.beginPath(); ctx.arc(o.x, o.y, o.r + 6 + pulse * 3, 0, TAU);
@@ -1048,13 +1163,16 @@ function render() {
     const tt = 1 - e.life / e.max;
     const fade = e.life / e.max;
     const r = EXPLOSION_R * (e.scale || 1) * (0.35 + 0.65 * tt);
-    drawGlow(e.x, e.y, r * 1.5, '#ffb070', 0.5 * fade * fade);
+    const col = e.color || '#ffb070';
+    drawGlow(e.x, e.y, r * 1.5, col, 0.5 * fade * fade);
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    ctx.strokeStyle = 'rgba(255, 170, 110, ' + (0.85 * fade) + ')';
+    ctx.globalAlpha = 0.85 * fade;
+    ctx.strokeStyle = col;
     ctx.lineWidth = 5 * fade + 1;
     ctx.beginPath(); ctx.arc(e.x, e.y, r, 0, TAU); ctx.stroke();
-    ctx.strokeStyle = 'rgba(255, 240, 220, ' + (0.6 * fade) + ')';
+    ctx.globalAlpha = 0.6 * fade;
+    ctx.strokeStyle = '#fff2d0';
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(e.x, e.y, r * 0.7, 0, TAU); ctx.stroke();
     ctx.restore();
@@ -1091,11 +1209,9 @@ async function refreshWheelConnectUI() {
     wheelSettingsGroup.classList.add('hidden');
     disconnectButton.classList.add('hidden');
     statusEl.textContent = 'Keys / mouse / pad ready';
-    if (hintEl) hintEl.textContent = 'gamepad \u00b7 \u2190/\u2192 or A/D \u00b7 mouse \u00b7 touch';
     return;
   }
 
-  if (hintEl) hintEl.textContent = 'wheel \u00b7 gamepad \u00b7 \u2190/\u2192 or A/D \u00b7 mouse \u00b7 touch';
   wheelSettingsGroup.classList.remove('hidden');
   const connected = !!(input.wheel && input.wheel.isConnected);
   if (connected) {
@@ -1198,6 +1314,19 @@ function closeSettings() {
   resumeGame();
 }
 
+function openHelp() {
+  if (!helpModal) return;
+  if (settingsModal && !settingsModal.classList.contains('hidden')) closeSettings();
+  helpModal.classList.remove('hidden');
+  pauseGame();
+}
+
+function closeHelp() {
+  if (!helpModal) return;
+  helpModal.classList.add('hidden');
+  resumeGame();
+}
+
 wheelSettingsBtn.addEventListener('click', () => {
   if (!settingsModal) return;
   if (settingsModal.classList.contains('hidden')) openSettings();
@@ -1209,8 +1338,19 @@ if (settingsModal) {
     if (!e.target.closest('.wheel-panel')) closeSettings();
   });
 }
+if (helpButton) helpButton.addEventListener('click', openHelp);
+if (helpFromStart) helpFromStart.addEventListener('click', openHelp);
+if (helpClose) helpClose.addEventListener('click', closeHelp);
+if (helpModal) {
+  helpModal.addEventListener('click', (e) => {
+    if (!e.target.closest('.wheel-panel')) closeHelp();
+  });
+}
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && settingsModal && !settingsModal.classList.contains('hidden')) closeSettings();
+  if (e.key === 'Escape') {
+    if (helpModal && !helpModal.classList.contains('hidden')) { closeHelp(); return; }
+    if (settingsModal && !settingsModal.classList.contains('hidden')) closeSettings();
+  }
 });
 ffbStrengthInput.addEventListener('input', () => {
   ffbStrengthVal.textContent = ffbStrengthInput.value + '%';
