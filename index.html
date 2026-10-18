@@ -52,6 +52,7 @@
       #health { color: var(--lime); text-shadow: 0 0 10px rgba(182, 255, 61, .85); }
       #mass { color: var(--magenta); text-shadow: 0 0 10px rgba(255, 61, 240, .85); }
       #score { color: var(--yellow); text-shadow: 0 0 10px rgba(255, 225, 77, .85); }
+      #wave { color: #c9a0ff; text-shadow: 0 0 10px rgba(201, 160, 255, .85); }
       #source { color: var(--accent-2); text-shadow: 0 0 10px rgba(125, 252, 255, .85); }
       #ffb { color: var(--orange); text-shadow: 0 0 10px rgba(255, 138, 61, .85); }
       .hud .brand {
@@ -194,6 +195,7 @@
         <span>Health <b id="health">100</b></span>
         <span>Mass <b id="mass">1.00</b></span>
         <span>Score <b id="score">0</b></span>
+        <span>Wave <b id="wave">1</b></span>
         <span>Input <b id="source">keys</b></span>
         <span>FFB <b id="ffb">—</b></span>
       </div>
@@ -203,7 +205,7 @@
         <span id="wheelChip" class="wheel-chip hidden"></span>
         <button id="wheelSettingsBtn" class="ghost">Settings</button>
         <button id="restartButton" class="ghost">Restart</button>
-        <span id="status">Keys / mouse ready · wheel/stick optional</span>
+        <span id="status">Keys / mouse / pad ready</span>
       </div>
     </div>
 
@@ -265,6 +267,6 @@
       </div>
     </div>
 
-    <script type="module" src="game.js?v=20261018ag"></script>
+    <script type="module" src="game.js?v=20261018al"></script>
   </body>
 </html>

@@ -1,5 +1,5 @@
-import { SteeringInput } from './input.js?v=20261018ag';
-import { AudioEngine } from './audio.js?v=20261018ag';
+import { SteeringInput } from './input.js?v=20261018al';
+import { AudioEngine } from './audio.js?v=20261018al';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -10,6 +10,7 @@ const sourceEl = document.getElementById('source');
 const healthEl = document.getElementById('health');
 const massEl = document.getElementById('mass');
 const scoreEl = document.getElementById('score');
+const waveEl = document.getElementById('wave');
 const ffbEl = document.getElementById('ffb');
 const wheelSettingsBtn = document.getElementById('wheelSettingsBtn');
 const connectButton = document.getElementById('connectButton');
@@ -83,6 +84,22 @@ const OVERSPEED_REGULAR_DAMAGE = 8;
 const HARD_IMPACT_R = 55;
 const HARD_IMPACT_FORCE = 320;
 
+// waves
+const WAVE_TIME = 35;
+const WAVE_LULL = 3;
+const WAVE_BANNER_TIME = 1.8;
+const WAVE_SCORE_BASE = 5;
+const WAVE_SCORE_PER = 2;
+const WAVE_MODIFIERS = {
+  normal: { label: 'NORMAL', spawn: 1, speed: 1, count: 1 },
+  fast: { label: 'FAST ORBS', spawn: 1.15, speed: 1.3, count: 1 },
+  volatile: { label: 'VOLATILE', spawn: 1.1, speed: 1, count: 1, volatileChance: 0.4 },
+  swarm: { label: 'SWARM', spawn: 1.8, speed: 0.8, count: 3 },
+  polarity: { label: 'POLARITY', spawn: 1, speed: 1, count: 1, alternating: true },
+  heavy: { label: 'HEAVY ORBS', spawn: 1.2, speed: 0.9, count: 1, energy: 1.5 }
+};
+const WAVE_ORDER = ['normal', 'fast', 'volatile', 'swarm', 'polarity', 'heavy'];
+
 // polarity / absorption
 const POLARITY = true;
 const ORB_SIZE = 8;            // render radius while stuck
@@ -115,7 +132,10 @@ let explosions = [];
 let particles = [];
 let health = 100, score = 0, caught = 0, exploded = 0;
 let streak = 0;
-let difficulty = 0, spawnTimer = 1.0, spawnEvery = 1.6;
+let spawnTimer = 0;
+let wave = 1, waveTimer = 0, wavePhase = 'active', waveLull = 0, runTime = 0;
+let waveModifier = 'normal', waveNextModifier = null, wavePolFlip = 0;
+let waveBanner = null;
 let running = false, over = false, paused = false;
 let shedCooldown = 0;
 let spinLoad = 0;
@@ -167,11 +187,14 @@ function reset() {
   magnet = { phi: 0, omega: 0 };
   stuck = []; orbs = []; explosions = []; particles = []; streams = []; streamTimer = 0;
   health = 100; score = 0; caught = 0; exploded = 0; streak = 0;
-  difficulty = 0; spawnTimer = 0.9; spawnEvery = 1.6;
+  wave = 1; waveTimer = 0; wavePhase = 'active'; waveLull = 0; runTime = 0;
+  waveModifier = 'normal'; waveNextModifier = null; wavePolFlip = 0;
+  waveBanner = null; spawnTimer = 0;
   running = true; over = false; shedCooldown = 0; spinLoad = 0; jolt = 0; joltForce = 0;
   input.reset();
   audio.init();
   audio.setMusicIntensity(0.2);
+  beginWave(1);
   overlay.classList.add('hidden');
   syncHud();
 }
@@ -187,6 +210,7 @@ function syncHud() {
   healthEl.textContent = Math.max(0, Math.round(health));
   massEl.textContent = inertia().toFixed(2);
   scoreEl.textContent = score;
+  if (waveEl) waveEl.textContent = wave;
   sourceEl.textContent = input.source + (input.ffbActive ? ' + FFB' : '');
 }
 
@@ -198,7 +222,7 @@ function gameOver() {
   audio.setTransfer(0);
   audio.setMass(1);
   overlay.querySelector('h2').textContent = 'Core breached';
-  overlay.querySelector('p').textContent = 'Score: ' + score + ' · caught ' + caught + ' · unstable ' + exploded + '.';
+  overlay.querySelector('p').textContent = 'Score: ' + score + ' · wave ' + wave + ' · caught ' + caught + ' · unstable ' + exploded + '.';
   overlay.classList.remove('hidden');
   overlay.querySelector('button').textContent = 'Restart';
   syncHud();
@@ -214,7 +238,83 @@ const poles = () => [
   { p: poleWorld(-1), aff: 1 }
 ];
 
-function spawnOrb() {
+function waveBaseInterval() {
+  return Math.max(0.45, 1.6 - runTime * 0.0055);
+}
+
+function waveBaseSpeed() {
+  return 35 + Math.min(runTime * 0.85, 170);
+}
+
+function modifierLabel(name) {
+  return (WAVE_MODIFIERS[name] || WAVE_MODIFIERS.normal).label;
+}
+
+function getWaveModifier(n) {
+  if (n <= WAVE_ORDER.length) return WAVE_ORDER[n - 1];
+  let next;
+  do {
+    next = WAVE_ORDER[Math.floor(Math.random() * WAVE_ORDER.length)];
+  } while (next === waveModifier);
+  return next;
+}
+
+function spawnWaveInterval() {
+  const mod = WAVE_MODIFIERS[waveModifier] || WAVE_MODIFIERS.normal;
+  return Math.max(0.35, waveBaseInterval() * (mod.spawn || 1));
+}
+
+function beginWave(n) {
+  wave = n;
+  waveModifier = waveNextModifier || getWaveModifier(n);
+  waveNextModifier = null;
+  waveTimer = 0;
+  wavePhase = 'active';
+  waveLull = 0;
+  wavePolFlip = 0;
+  spawnTimer = 0.7;
+  waveBanner = {
+    title: 'WAVE ' + n,
+    subtitle: modifierLabel(waveModifier),
+    life: WAVE_BANNER_TIME,
+    max: WAVE_BANNER_TIME
+  };
+  audio.wave();
+  syncHud();
+}
+
+function endWave() {
+  const bonus = WAVE_SCORE_BASE + wave * WAVE_SCORE_PER;
+  score += bonus;
+  wavePhase = 'lull';
+  waveLull = WAVE_LULL;
+  spawnTimer = Infinity;
+  waveNextModifier = getWaveModifier(wave + 1);
+  waveBanner = {
+    title: 'WAVE ' + wave + ' COMPLETE',
+    subtitle: '+' + bonus + ' \u00b7 NEXT: ' + modifierLabel(waveNextModifier),
+    life: WAVE_LULL,
+    max: WAVE_LULL
+  };
+  syncHud();
+}
+
+function spawnWaveOrbs() {
+  const mod = WAVE_MODIFIERS[waveModifier] || WAVE_MODIFIERS.normal;
+  const speed = waveBaseSpeed() * (mod.speed || 1);
+  const energy = mod.energy || 1;
+  const count = mod.count || 1;
+  for (let k = 0; k < count; k++) {
+    let pol = null;
+    if (mod.alternating) {
+      pol = wavePolFlip;
+      wavePolFlip = 1 - wavePolFlip;
+    }
+    spawnOrb({ speed, energy, pol, volatileChance: mod.volatileChance });
+  }
+}
+
+function spawnOrb({ speed = null, energy = 1, pol = null, volatileChance = VOLATILE_CHANCE } = {}) {
   const a = Math.random() * TAU;
   const ux = Math.cos(a), uy = Math.sin(a);
   const lead = 60;
@@ -224,15 +324,15 @@ function spawnOrb() {
   );
   const x = CX + ux * r;
   const y = CY + uy * r;
-  const speed = 55 + Math.min(difficulty * 7, 150);
+  const orbSpeed = speed === null ? waveBaseSpeed() : speed;
   orbs.push({
     x, y,
-    vx: -ux * speed,
-    vy: -uy * speed,
-    r: 12,
-    pol: Math.random() < 0.5 ? 0 : 1,
-    volatile: Math.random() < VOLATILE_CHANCE,
-    energy: 1, noCatch: 0
+    vx: -ux * orbSpeed,
+    vy: -uy * orbSpeed,
+    r: 12 * Math.sqrt(energy),
+    pol: pol === null ? (Math.random() < 0.5 ? 0 : 1) : pol,
+    volatile: Math.random() < volatileChance,
+    energy, noCatch: 0
   });
 }
 
@@ -441,10 +541,26 @@ function step(dt) {
     }
   }
 
-  difficulty += dt;
-  spawnEvery = Math.max(0.45, 1.6 - difficulty * 0.012);
-  spawnTimer -= dt;
-  if (spawnTimer <= 0) { spawnOrb(); spawnTimer = spawnEvery; }
+  waveTimer += dt;
+  if (wavePhase === 'active') {
+    runTime += dt;
+    if (waveTimer >= WAVE_TIME) {
+      endWave();
+    } else {
+      spawnTimer -= dt;
+      if (spawnTimer <= 0) {
+        spawnWaveOrbs();
+        spawnTimer = spawnWaveInterval();
+      }
+    }
+  } else {
+    waveLull -= dt;
+    if (waveLull <= 0) beginWave(wave + 1);
+  }
+  if (waveBanner) {
+    waveBanner.life -= dt;
+    if (waveBanner.life <= 0) waveBanner = null;
+  }
 
   const ps = poles();
 
@@ -588,7 +704,7 @@ function updateAudio(dt) {
     return;
   }
   audio.setMass(inertia());
-  audio.setMusicIntensity(clamp(difficulty / 60 + (1 - health / 100) * 0.35, 0, 1));
+  audio.setMusicIntensity(clamp(runTime / 180 + (1 - health / 100) * 0.35, 0, 1));
   let near = 0;
   const ps = poles();
   for (const o of orbs) {
@@ -817,6 +933,33 @@ function drawOverloadEdges(t) {
   ctx.restore();
 }
 
+function renderWaveBanner() {
+  if (!waveBanner) return;
+  const age = waveBanner.max - waveBanner.life;
+  const fadeIn = clamp(age / 0.22, 0, 1);
+  const fadeOut = clamp(waveBanner.life / 0.45, 0, 1);
+  const alpha = fadeIn * fadeOut;
+  if (alpha <= 0.01) return;
+
+  const y = Math.max(120, H * 0.26);
+  const size = Math.round(clamp(Math.min(W, H) * 0.055, 18, 42));
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = '#eaffff';
+  ctx.shadowColor = 'rgba(34, 225, 255, .9)';
+  ctx.shadowBlur = 18;
+  ctx.font = '900 ' + size + 'px ui-sans-serif, system-ui, sans-serif';
+  ctx.fillText(waveBanner.title, CX, y);
+  ctx.fillStyle = '#7dfcff';
+  ctx.shadowColor = 'rgba(125, 252, 255, .8)';
+  ctx.shadowBlur = 12;
+  ctx.font = '800 ' + Math.round(size * 0.52) + 'px ui-sans-serif, system-ui, sans-serif';
+  ctx.fillText(waveBanner.subtitle, CX, y + size * 0.9);
+  ctx.restore();
+}
+
 function render() {
   ctx.fillStyle = '#05060a';
   ctx.fillRect(0, 0, W, H);
@@ -928,6 +1071,7 @@ function render() {
   }
 
   drawOverloadEdges(t);
+  renderWaveBanner();
 }
 
 function handleWheelDisconnected() {
@@ -935,7 +1079,7 @@ function handleWheelDisconnected() {
   input.wheel = null;
   input.ffbAvailable = false;
   if (input.source === 'wheel') input.source = 'keys';
-  statusEl.textContent = webHidSupported ? 'Keys / mouse ready \u00b7 wheel/stick optional' : 'Keys / mouse ready';
+  statusEl.textContent = 'Keys / mouse / pad ready';
   refreshWheelConnectUI();
   syncHud();
 }
@@ -946,7 +1090,7 @@ async function refreshWheelConnectUI() {
     wheelChip.classList.add('hidden');
     wheelSettingsGroup.classList.add('hidden');
     disconnectButton.classList.add('hidden');
-    statusEl.textContent = 'Keys / mouse ready';
+    statusEl.textContent = 'Keys / mouse / pad ready';
     if (hintEl) hintEl.textContent = 'gamepad \u00b7 \u2190/\u2192 or A/D \u00b7 mouse \u00b7 touch';
     return;
   }

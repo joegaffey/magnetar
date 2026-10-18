@@ -205,6 +205,11 @@ export class AudioEngine {
     this._tone(base * 1.5, { type: 'sine', dur: 0.16, gain: 0.06, pan, glide: base * 1.5, attack: 0.003 });
   }
 
+  wave() {
+    this._tone(392, { type: 'triangle', dur: 0.18, gain: 0.11, glide: 523.25 });
+    this._tone(587.33, { type: 'sine', dur: 0.28, gain: 0.07, glide: 783.99, attack: 0.01 });
+  }
+
   hit(pan = 0, strength = 1) {
     const g = Math.min(1, strength);
     this._tone(2100 + Math.random() * 700, { type: 'triangle', dur: 0.06, gain: 0.06 * g, pan });

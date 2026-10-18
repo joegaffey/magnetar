@@ -80,13 +80,25 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 - A detached orb that reaches the core damages `Health` in proportion to its remaining energy (`size / ORB_SIZE`).
 - `Health ≤ 0` → game over.
 
-### 5.6 Escalation
-- Time-based difficulty increases spawn rate and orb speed:
-  `spawnEvery = max(0.45, 1.6 − t·0.012)`, orb speed `55 + min(t·7, 150)`.
-- Planned: wave events (bursts, fast orbs), difficulty tiers.
+### 5.6 Waves & escalation
+- Endless **timed waves**: `WAVE_TIME` (35 s) active, then a `WAVE_LULL` (3 s) with no new spawns. Existing orbs remain; absorption and overload decay continue.
+- Difficulty ramps gradually with **active play time** (`runTime`, lulls excluded):
+  - base spawn interval `max(0.45, 1.6 − runTime·0.0055)`
+  - base orb speed `35 + min(runTime·0.85, 170)`
+  - modifiers multiply those values.
+- Modifiers (first pass uses existing orb types):
+  - **Normal** — no change
+  - **Fast** — faster orbs, slightly fewer spawns
+  - **Volatile** — higher unstable chance
+  - **Swarm** — 3 orbs per spawn, slower
+  - **Polarity** — alternating colours
+  - **Heavy** — higher mass/damage, slower and larger
+- Intro order is deterministic: Normal → Fast → Volatile → Swarm → Polarity → Heavy. After that, a random modifier is chosen without repeating the previous one.
+- A wave banner, permanent HUD `Wave` field and audio cue announce each wave; the lull shows the next modifier.
 
 ### 5.7 Scoring
-- `+1` per catch. Shedding never scores. (Planned: survival ticks, combo/multipliers.)
+- `+1` per catch. Shedding never scores.
+- Wave survival bonus: `5 + 2 × wave` at the end of each wave. Wave reached is shown in the game-over summary. (Planned: survival ticks, combo/multipliers.)
 
 ### 5.8 Polarity (experimental, in build)
 - Two poles with opposite affinity: the `+BAR_HALF` pole attracts **amber** orbs (pol 0), the `-BAR_HALF` pole attracts **blue** orbs (pol 1).
@@ -153,6 +165,7 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 - **Incoming edge glow:** an orb still outside the viewport casts a soft colored glow from a marker just outside the screen edge (`EDGE_GLOW_OFFSET`), so it reads as an off-screen light source rather than an orb materialising at the edge. It fades in gradually from spawn and reaches full brightness as it reaches the marker (red and faster-pulsing for unstable orbs).
 - **Stuck orbs:** clustered on the pole with a glow; gentle pulse.
 - **Overload:** as spin load builds, a pulsing red glow builds around both poles and a soft red glow grows inward from all four screen edges; at full overload both pulse clearly. Hard contacts add a small orange shock ring (regular) or a full unstable blast (volatile).
+- **Wave banner:** large centered neon `WAVE N` text with a modifier subtitle, fading in/out; the lull banner shows the wave bonus and next modifier.
 - **Catch:** particle burst at the contact point (reads as a real hit).
 - **Shed:** particle burst at release; shed orbs keep their polarity colour.
 - **Explosion:** expanding ring + large particle burst (additive), angular kick to the magnet.
@@ -170,6 +183,7 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 - **Ambient:** dark detuned drone; a filtered **air layer** whose brightness/gain tracks inertia.
 - **Stereo panning** by orb X relative to the core; ambient centred.
 - **Bright accents (non-physical):** score blips that rise in pitch with a catch/burst streak, and high hit ticks on pole impacts and core damage, layered over the low thunks.
+- **Wave cue:** a short rising chime announces each wave.
 - **Adaptive generative score:** an original piece cycling four 4-bar sections — D-major I–V–vi–IV, an E-major lift (up a whole step), then D-major vi–IV–I–V and IV–V–vi–V — with warm detuned pads, a shimmering sine arpeggio, soft bass, and a high lead in later sections. Tempo scales with difficulty; sidechain-style ducking under impacts. Inspired by warm, euphoric synth-pop, not a transcription.
 - **Master, Music volume and Mute** in the **Settings** modal, persisted; opening Settings pauses play. AudioContext unlocks on first interaction and suspends when the tab is hidden.
 - Optional later: a small music loop layered on top.
@@ -200,14 +214,18 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 | `OVERLOAD_DRAIN` | 5 /s | core health lost while fully overloaded |
 | `OVERSPEED_VOLATILE_DAMAGE` | 12–24 | unstable hard-catch core damage |
 | `OVERSPEED_REGULAR_DAMAGE` | 8–16 | regular hard-catch core damage |
+| `WAVE_TIME` | 35 s | active wave duration |
+| `WAVE_LULL` | 3 s | no-spawn break between waves |
+| `WAVE_BANNER_TIME` | 1.8 s | wave-start banner duration |
+| `WAVE_SCORE_BASE` / `WAVE_SCORE_PER` | 5 / 2 | wave bonus = base + per × wave |
 | `CORE_R` | 20 | core radius |
 | `CORE_PULL` | 275 | core gravity-well acceleration on all free orbs |
 | `ORB_DRAG` | 1.1 /s | linear drag on free orbs (≈218 px/s terminal) |
 | `MAX_ORB_SPEED` | 340 px/s | free-orb speed cap |
 | Core health | 100 | durability |
 | Core damage | 8 × energy | normal orb; an unstable orb hit deals 24 + blast |
-| Spawn | 1.6 → 0.45 s | interval over time |
-| Orb speed | 55 → 205 px/s | over time |
+| Spawn | `max(0.45, 1.6 − runTime·0.0055) × modifier` | gradual active-time interval |
+| Orb speed | `35 + min(runTime·0.85, 170)` × modifier | gradual active-time speed (slower early) |
 
 ### Experimental parameters
 
@@ -229,7 +247,8 @@ Tuning goals: ~30–45 s to first "heavy" feel; fast spins naturally shed the ou
 
 - **Full-viewport canvas**; HUD and controls overlay on top (no letterboxing).
 - **Start gate:** a help overlay with controls, the overload warning, and a **Start** button; tapping it begins play (no auto-start). The overlay scrolls and compacts on short/landscape screens. On failure the same overlay shows results + **Restart**.
-- HUD (top-left): neon color-coded `Health`, `Mass`, `Score`, `Input` (source + FFB), `FFB`; brand wordmark.
+- **Wave announcement:** a brief, non-blocking canvas banner below the HUD at wave start and during the lull (next modifier), plus an audio chime and HUD `Wave` field.
+- HUD (top-left): neon color-coded `Health`, `Mass`, `Score`, `Wave`, `Input` (source + FFB), `FFB`; brand wordmark.
 - Top-right: **Connect wheel** (only with WebHID support; regular until a previously authorized device is found, then highlighted), **Settings**, **Restart** + status. While connected, the button is replaced by the device name; **Settings → Wheel / stick** offers disconnect. The browser device picker pauses play until it closes. Without WebHID, wheel/stick controls are hidden.
 - **Settings modal:** Controls (touch sensitivity), Audio (Mute, Master, Music) and Wheel (disconnect when connected, FFB strength, rotation range); opening it **pauses play** and stops FFB; close via ×, backdrop or Esc.
 - Game over overlay: score + caught/unstable counts, **Restart**.
@@ -239,7 +258,7 @@ Tuning goals: ~30–45 s to first "heavy" feel; fast spins naturally shed the ou
 
 - Files: `index.html`, `game.js`, `audio.js`, `input.js`; wheel library vendored at `vendor/webhid-wheel.js`.
 - Fixed timestep simulation at 120 Hz (`STEP = 1/120`), rendered per `requestAnimationFrame`.
-- State: magnet `{φ, ω}`, `stuck[]` (magnet-local coords + mass), free `orbs[]`, `health`, `score`, difficulty timers.
+- State: magnet `{φ, ω}`, `stuck[]` (magnet-local coords + mass), free `orbs[]`, `health`, `score`, wave timers/modifier.
 - FFB sent at ~60 Hz, throttled.
 - Performance target: 60 fps on integrated graphics; O(orbs × 2 poles) per step.
 
@@ -248,7 +267,7 @@ Tuning goals: ~30–45 s to first "heavy" feel; fast spins naturally shed the ou
 - **M0 — prototype (done):** magnet, orbs, catch, inertia, shed, core, HUD, wheel/keyboard/mouse.
 - **M1 — feel pass:** tune inertia/shed/attraction; make weight legible; verify wheel FFB.
 - **M2 — art/juice (done):** neon Geometry-Wars palette, bloom, particles, vignette/scanlines, HUD.
-- **M3 — content (in progress):** unstable orbs done; remaining orb types, wave events, combos, difficulty tiers.
+- **M3 — content (in progress):** unstable orbs and timed waves/modifiers done; remaining orb types, combos, more wave variety.
 - **M4 — inputs (mostly done):** wheel/keyboard/mouse/touch/gamepad + settings/pause.
 
 ## 12. Open questions
