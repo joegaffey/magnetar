@@ -1,5 +1,5 @@
-import { SteeringInput } from './input.js?v=20261018as';
-import { AudioEngine } from './audio.js?v=20261018as';
+import { SteeringInput } from './input.js?v=20261018at';
+import { AudioEngine } from './audio.js?v=20261018at';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -340,6 +340,7 @@ function endWave() {
   waveLull = WAVE_LULL;
   spawnTimer = Infinity;
   waveNextModifier = getWaveModifier(wave + 1);
+  audio.waveEnd();
   waveBanner = {
     title: 'WAVE ' + wave + ' COMPLETE',
     subtitle: '+' + bonus + ' \u00b7 NEXT: ' + modifierLabel(waveNextModifier),

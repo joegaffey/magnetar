@@ -206,8 +206,17 @@ export class AudioEngine {
   }
 
   wave() {
-    this._tone(392, { type: 'triangle', dur: 0.18, gain: 0.11, glide: 523.25 });
-    this._tone(587.33, { type: 'sine', dur: 0.28, gain: 0.07, glide: 783.99, attack: 0.01 });
+    this.duck();
+    this._tone(392, { type: 'triangle', dur: 0.24, gain: 0.16, glide: 523.25 });
+    this._tone(587.33, { type: 'sine', dur: 0.32, gain: 0.11, glide: 783.99 });
+    this._tone(783.99, { type: 'sine', dur: 0.36, gain: 0.07, glide: 1046.5, attack: 0.01 });
+  }
+
+  waveEnd() {
+    this.duck();
+    this._tone(659.25, { type: 'triangle', dur: 0.26, gain: 0.15, glide: 523.25 });
+    this._tone(523.25, { type: 'sine', dur: 0.34, gain: 0.12, glide: 392 });
+    this._tone(392, { type: 'sine', dur: 0.42, gain: 0.08, glide: 293.66 });
   }
 
   power(pan = 0) {

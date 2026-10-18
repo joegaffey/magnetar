@@ -194,7 +194,7 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 - **Ambient:** dark detuned drone; a filtered **air layer** whose brightness/gain tracks inertia.
 - **Stereo panning** by orb X relative to the core; ambient centred.
 - **Bright accents (non-physical):** score blips that rise in pitch with a catch/burst streak, and high hit ticks on pole impacts and core damage, layered over the low thunks.
-- **Wave cue:** a short rising chime announces each wave.
+- **Wave cues:** a rising chime announces each wave; a descending chime marks wave completion and the lull.
 - **Power pickup:** a bright rising chime when a green power orb reaches the core.
 - **Adaptive generative score:** an original piece cycling four 4-bar sections — D-major I–V–vi–IV, an E-major lift (up a whole step), then D-major vi–IV–I–V and IV–V–vi–V — with warm detuned pads, a shimmering sine arpeggio, soft bass, and a high lead in later sections. Tempo scales with difficulty; sidechain-style ducking under impacts. Inspired by warm, euphoric synth-pop, not a transcription.
 - **Master, Music volume and Mute** in the **Settings** modal, persisted; opening Settings pauses play. AudioContext unlocks on first interaction and suspends when the tab is hidden.
