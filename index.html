@@ -2,8 +2,18 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Magnetar — a rotation-controlled survival game: catch iron orbs on a rotating magnet, manage its weight, and spin to shed them before the core is breached." />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="Magnetar — a rotation-controlled survival game: catch energy orbs on a rotating magnet, manage its weight, and spin to shed them before the core is breached." />
+    <meta name="theme-color" content="#04050a" />
+    <meta name="application-name" content="Magnetar" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Magnetar" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/favicon-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
     <title>Magnetar</title>
     <style>
       :root {
@@ -118,14 +128,16 @@
 
       .wheel-panel {
         position: relative; z-index: 1;
-        width: 320px; max-width: 100%; max-height: calc(100vh - 40px); overflow: auto;
+        width: 320px; max-width: 100%; overflow: auto;
         padding: 16px 18px; display: grid; gap: 11px;
+        max-height: calc(100vh - 40px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
         background: var(--panel); border: 1.5px solid rgba(34, 225, 255, .45); border-radius: 2px;
         box-shadow: 0 0 24px rgba(34, 225, 255, .28), inset 0 0 22px rgba(34, 225, 255, .05);
       }
       .settings-modal {
         position: fixed; inset: 0; z-index: 30;
-        display: flex; align-items: center; justify-content: center; padding: 20px;
+        display: flex; align-items: center; justify-content: center;
+        padding: calc(20px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left));
       }
       .settings-scrim { position: absolute; inset: 0; background: rgba(3, 6, 14, .68); backdrop-filter: blur(2px); }
       .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -150,7 +162,8 @@
 
       #overlay {
         position: fixed; inset: 0; z-index: 20; display: flex; overflow-y: auto;
-        background: rgba(3, 6, 14, .55); padding: 20px;
+        background: rgba(3, 6, 14, .55);
+        padding: calc(20px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left));
       }
       #overlay .card {
         margin: auto;
@@ -166,7 +179,7 @@
       .hidden { display: none !important; }
 
       @media (max-height: 560px) {
-        #overlay { padding: 12px; }
+        #overlay { padding: calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left)); }
         #overlay .card { padding: 18px 20px; max-width: 520px; }
         #overlay h2 { font-size: 1.2rem; letter-spacing: .2em; }
         #overlay p { font-size: .8rem; line-height: 1.4; margin-bottom: 14px; }
@@ -181,8 +194,8 @@
         .hud { justify-content: center; gap: 6px 14px; font-size: .66rem; }
         .hud .brand { display: none; }
         #helpPanel { width: 100%; }
-        .settings-modal { padding: 12px; }
-        .wheel-panel { width: 100%; max-height: calc(100vh - 24px); }
+        .settings-modal { padding: calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left)); }
+        .wheel-panel { width: 100%; max-height: calc(100vh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
       }
     </style>
   </head>
@@ -281,7 +294,7 @@
     <div id="overlay">
       <div class="card">
         <h2>Magnetar</h2>
-        <p>The core is collapsing. You are the last magnet in its orbit — turn to catch iron orbs, let green power fall through, and keep the event horizon from swallowing what's left.</p>
+        <p>The core is collapsing. You are the last magnet in its orbit — turn to catch energy orbs, let green power fall through, and keep the event horizon from swallowing what's left.</p>
         <div class="overlay-buttons">
           <button id="startButton">Start</button>
           <button id="newRunButton" class="ghost hidden">New run</button>
@@ -290,6 +303,6 @@
       </div>
     </div>
 
-    <script type="module" src="game.js?v=20261018at"></script>
+    <script type="module" src="game.js?v=20261018au"></script>
   </body>
 </html>

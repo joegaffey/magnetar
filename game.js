@@ -1,5 +1,5 @@
-import { SteeringInput } from './input.js?v=20261018at';
-import { AudioEngine } from './audio.js?v=20261018at';
+import { SteeringInput } from './input.js?v=20261018au';
+import { AudioEngine } from './audio.js?v=20261018au';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -385,7 +385,7 @@ function spawnOrb({ speed = null, energy = 1, pol = null, volatileChance = VOLAT
     vy: -uy * orbSpeed,
     r: 12 * Math.sqrt(orbEnergy),
     pol: power ? null : (pol === null ? (Math.random() < 0.5 ? 0 : 1) : pol),
-    kind: power ? 'power' : 'iron',
+    kind: power ? 'power' : 'energy',
     unstable,
     volatile: !power && Math.random() < volatileChance,
     energy: orbEnergy, noCatch: 0

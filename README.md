@@ -2,7 +2,7 @@
 
 **Play:** https://joegaffey.com/magnetar/
 
-A one-axis survival game about catching iron orbs on a rotating magnet while they spiral into a black hole.
+A one-axis survival game about catching energy orbs on a rotating magnet while they spiral into a black hole.
 
 Every orb that sticks adds mass — the magnet lags and becomes harder to control. Left alone, stuck orbs are slowly absorbed into the black hole, feeding it and restoring its strength. Spinning fast can naturally shake orbs loose, but sustained speed overloads the poles — when they glow red, any contact detonates.
 
@@ -52,6 +52,10 @@ npx serve
 Use a Chromium-based browser with WebHID for wheel/flight-stick input; keyboard, mouse, touch and gamepad work in any modern browser.
 
 The wheel library is vendored at [`vendor/webhid-wheel.js`](./vendor/webhid-wheel.js) (a copy of [webhid-wheel](https://github.com/joegaffey/webhid-wheel)) so the page is self-contained; refresh it from that repo when the library changes.
+
+## Install / fullscreen
+
+Magnetar is installable as a PWA. On supported mobile browsers, use **Install app** or **Add to Home Screen** for a fullscreen/standalone launch. The manifest requests fullscreen with a standalone fallback; safe-area insets keep the HUD and dialogs clear of notches. There is no offline service worker yet.
 
 ## Tuning
 

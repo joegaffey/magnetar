@@ -4,12 +4,12 @@ Status: prototype (playable). This doc captures direction, mechanics, art, and t
 
 ## 1. Concept
 
-You are a **rotating bar magnet** guarding a core. Iron orbs drift in from all directions; catch them on your poles to keep the core safe. Each caught orb **adds mass** — your magnet lags, overshoots, and feels heavier. **Spin to shed** the weight before you become too sluggish. Survive escalating waves.
+You are a **rotating bar magnet** guarding a core. Energy orbs drift in from all directions; catch them on your poles to keep the core safe. Each caught orb **adds mass** — your magnet lags, overshoots, and feels heavier. **Spin to shed** the weight before you become too sluggish. Survive escalating waves.
 
 - **Genre:** physics survival / arcade resource management
 - **Perspective:** 2D top-down
 - **Session:** 2–6 minutes
-- **Platform:** web (canvas), Chromium for wheel/FFB; any modern browser for keyboard/mouse/touch/gamepad
+- **Platform:** installable web app (PWA); Chromium for wheel/FFB; any modern browser for keyboard/mouse/touch/gamepad
 - **Controls:** one axis only (no buttons required)
 
 ## 2. Design pillars
@@ -278,7 +278,7 @@ Tuning goals: ~30–45 s to first "heavy" feel; fast spins naturally shed the ou
 
 ## 10. Technical
 
-- Files: `index.html`, `game.js`, `audio.js`, `input.js`; wheel library vendored at `vendor/webhid-wheel.js`.
+- Files: `index.html`, `game.js`, `audio.js`, `input.js`, `manifest.webmanifest`, `icons/`; wheel library vendored at `vendor/webhid-wheel.js`. No service worker yet (no offline mode).
 - Fixed timestep simulation at 120 Hz (`STEP = 1/120`), rendered per `requestAnimationFrame`.
 - State: magnet `{φ, ω}`, `stuck[]` (magnet-local coords + mass), free `orbs[]`, `health`, `score`, wave timers/modifier. Highest wave is persisted in `localStorage` (`magnetar-last-wave`).
 - FFB sent at ~60 Hz, throttled.
