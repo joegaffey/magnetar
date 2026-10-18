@@ -20,6 +20,7 @@ Every orb that sticks adds mass — the magnet lags and becomes harder to contro
 - **Physical poles:** orbs bounce off the pole orbs and never pass through; the opposite-colour pole can bat them away, and each hit gives a wheel jolt. The bridge between the poles is just energy.
 - **Polarity:** one pole attracts amber orbs, the other blue; the wrong pole pushes them away.
 - **Core gravity:** the black hole pulls every orb toward the centre, so positioning matters.
+- **Edge warning:** off-screen orbs cast a soft localized glow just outside the screen edge where they will enter, fading in gradually from spawn and reaching full brightness before they enter; unstable orbs pulse red.
 - **Weight:** each stuck orb adds angular inertia (HUD `Mass`), making the magnet sluggish and overshooty.
 - **Absorb:** stuck orbs slowly shrink and feed the core, restoring `Health` and removing their mass.
 - **Unstable orbs:** some detonate at the core for 3× damage (with a blast that shoves nearby orbs and kicks the magnet), but if you catch one it bursts **instantly** for a 3× heal — high risk, high reward.

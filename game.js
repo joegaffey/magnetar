@@ -1,5 +1,5 @@
-import { SteeringInput } from './input.js?v=20261018d';
-import { AudioEngine } from './audio.js?v=20261018d';
+import { SteeringInput } from './input.js?v=20261018q';
+import { AudioEngine } from './audio.js?v=20261018q';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -64,6 +64,7 @@ const CORE_PULL = 275;         // acceleration of free orbs toward the core (all
 const ORB_DRAG = 1.1;          // linear drag on free orbs (1/s)
 const MAX_ORB_SPEED = 340;
 const FFB_DEADZONE = 0.05;
+const EDGE_GLOW_OFFSET = 16;    // glow centre sits this far outside the screen edge
 
 // polarity / absorption
 const POLARITY = true;
@@ -195,16 +196,19 @@ const poles = () => [
 
 function spawnOrb() {
   const a = Math.random() * TAU;
-  const rx = W / 2 + 60, ry = H / 2 + 60;
-  const x = CX + Math.cos(a) * rx;
-  const y = CY + Math.sin(a) * ry;
-  const dx = CX - x, dy = CY - y;
-  const d = Math.hypot(dx, dy) || 1;
+  const ux = Math.cos(a), uy = Math.sin(a);
+  const lead = 60;
+  const r = Math.min(
+    (W / 2 + lead) / Math.max(Math.abs(ux), 0.0001),
+    (H / 2 + lead) / Math.max(Math.abs(uy), 0.0001)
+  );
+  const x = CX + ux * r;
+  const y = CY + uy * r;
   const speed = 55 + Math.min(difficulty * 7, 150);
   orbs.push({
     x, y,
-    vx: (dx / d) * speed,
-    vy: (dy / d) * speed,
+    vx: -ux * speed,
+    vy: -uy * speed,
     r: 12,
     pol: Math.random() < 0.5 ? 0 : 1,
     volatile: Math.random() < VOLATILE_CHANCE,
@@ -627,6 +631,80 @@ function drawBlackHole(t, color) {
   ctx.fillStyle = '#000'; ctx.fill();
 }
 
+function edgeEntryPoint(o) {
+  const pad = -EDGE_GLOW_OFFSET;
+  const left = pad, right = W - pad, top = pad, bottom = H - pad;
+  const dx = CX - o.x, dy = CY - o.y;
+  let best = Infinity;
+  let edge = null;
+
+  if (o.x < left && dx > 0) {
+    const t = (left - o.x) / dx;
+    const y = o.y + dy * t;
+    if (t > 0 && y >= top && y <= bottom && t < best) { best = t; edge = 'left'; }
+  }
+  if (o.x > right && dx < 0) {
+    const t = (right - o.x) / dx;
+    const y = o.y + dy * t;
+    if (t > 0 && y >= top && y <= bottom && t < best) { best = t; edge = 'right'; }
+  }
+  if (o.y < top && dy > 0) {
+    const t = (top - o.y) / dy;
+    const x = o.x + dx * t;
+    if (t > 0 && x >= left && x <= right && t < best) { best = t; edge = 'top'; }
+  }
+  if (o.y > bottom && dy < 0) {
+    const t = (bottom - o.y) / dy;
+    const x = o.x + dx * t;
+    if (t > 0 && x >= left && x <= right && t < best) { best = t; edge = 'bottom'; }
+  }
+
+  if (!Number.isFinite(best)) return null;
+  return { x: o.x + dx * best, y: o.y + dy * best, edge };
+}
+
+function renderEdgeGlows(t) {
+  for (const o of orbs) {
+    if (o.x >= 0 && o.x <= W && o.y >= 0 && o.y <= H) {
+      if (o.edgeGlow) delete o.edgeGlow;
+      continue;
+    }
+
+    const hit = edgeEntryPoint(o);
+    if (hit) {
+      if (o.edgeGlow) {
+        o.edgeGlow.x = hit.x;
+        o.edgeGlow.y = hit.y;
+        o.edgeGlow.edge = hit.edge;
+      } else {
+        o.edgeGlow = { ...hit, startDist: 0 };
+      }
+    } else if (!o.edgeGlow) {
+      continue;
+    }
+
+    const glow = o.edgeGlow;
+    const dist = Math.hypot(glow.x - o.x, glow.y - o.y);
+    if (!glow.startDist) glow.startDist = Math.max(dist, 1);
+    const passed = (o.x - glow.x) * o.vx + (o.y - glow.y) * o.vy >= 0;
+    const fade = passed ? 1 : clamp(1 - dist / glow.startDist, 0, 1);
+    if (fade <= 0.01) continue;
+    drawEdgeGlow(glow, o, t, fade);
+  }
+}
+
+function drawEdgeGlow(hit, o, t, approach) {
+  const volatile = o.volatile;
+  const color = volatile ? '#ff5a5f' : ORB_COLORS[o.pol];
+  const full = approach >= 1;
+  const pulse = full ? 1 : 0.78 + 0.22 * (0.5 + 0.5 * Math.sin(t * (volatile ? 12 : 7) + o.x * 0.05 + o.y * 0.04));
+  const alpha = (volatile ? 1 : 0.8) * approach * pulse;
+
+  drawGlow(hit.x, hit.y, volatile ? 72 : 62, color, alpha * 0.55);
+  if (volatile) drawGlow(hit.x, hit.y, 50, '#ff5a5f', alpha * 0.5);
+  drawGlow(hit.x, hit.y, volatile ? 28 : 24, color, Math.min(1, alpha * 1.2));
+}
+
 function render() {
   ctx.fillStyle = '#05060a';
   ctx.fillRect(0, 0, W, H);
@@ -659,8 +737,9 @@ function render() {
   // particle tendrils from the horizon to each pole
   renderStreams();
 
-  // orbs (glow + core)
+  // orbs (glow + core); off-screen orbs are represented by edge glows
   for (const o of orbs) {
+    if (o.x < 0 || o.x > W || o.y < 0 || o.y > H) continue;
     const col = ORB_COLORS[o.pol];
     drawGlow(o.x, o.y, o.r * 3, col, 0.55);
     ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, TAU);
@@ -675,6 +754,9 @@ function render() {
       ctx.fillStyle = '#fff2d0'; ctx.fill();
     }
   }
+
+  // localized edge glows for orbs still outside the viewport
+  renderEdgeGlows(t);
 
   // poles (glowing ends of the wisps)
   const polePulse = 1 + Math.sin(t * 5) * 0.12;

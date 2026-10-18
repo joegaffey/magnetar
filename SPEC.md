@@ -55,7 +55,7 @@ I = I0 + Σ m_orb
 - Two poles at `±BAR_HALF` along `φ`.
 
 ### 5.2 Orbs
-- Spawn just off-screen at a random bearing; drift toward the core.
+- Spawn just off-screen (at least 60 px outside the nearest edge) at a random bearing; drift toward the core.
 - A gentle **core gravity well** (`CORE_PULL`) accelerates free orbs toward the centre, speed-capped at `MAX_ORB_SPEED`.
 - Each free orb is pulled toward the **nearest pole** within `ATTRACT_R`:
   `a = PULL · (1 − d/ATTRACT_R)` toward the pole.
@@ -140,6 +140,7 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 - **Black hole:** dark event horizon at the centre with a glowing accretion/health ring (no extra rings/lines).
 - **Bridges:** glowing particles flow **inward** from each pole to the event horizon (no solid bar or drawn lines). Orbs feed energy **into their pole**, which then forwards it to the centre — never orb → centre directly.
 - **Orbs:** glowing circles; volatile orbs get a red ring.
+- **Incoming edge glow:** an orb still outside the viewport casts a soft colored glow from a marker just outside the screen edge (`EDGE_GLOW_OFFSET`), so it reads as an off-screen light source rather than an orb materialising at the edge. It fades in gradually from spawn and reaches full brightness as it reaches the marker (red and faster-pulsing for unstable orbs).
 - **Stuck orbs:** clustered on the pole with a glow; gentle pulse.
 - **Catch:** particle burst at the contact point (reads as a real hit).
 - **Shed:** particle burst at release; shed orbs keep their polarity colour.
