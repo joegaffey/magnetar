@@ -4,7 +4,7 @@ Status: prototype (playable). This doc captures direction, mechanics, art, and t
 
 ## 1. Concept
 
-You are a **rotating bar magnet** guarding a core. Energy orbs drift in from all directions; catch them on your poles to keep the core safe. Each caught orb **adds mass** — your magnet lags, overshoots, and feels heavier. **Spin to shed** the weight before you become too sluggish. Survive escalating waves.
+You are a **rotating bar magnet** guarding a core. Energy orbs drift in from all directions; catch them on your poles to keep the core safe. Each caught orb **adds mass** — your magnet lags, overshoots, and feels heavier. Fast spinning can shed orbs as a physical consequence; shedding is not a goal in itself. Survive escalating waves.
 
 - **Genre:** physics survival / arcade resource management
 - **Perspective:** 2D top-down
@@ -163,9 +163,10 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 | Panels/border | `rgba(6, 10, 22, .94)` / neon cyan `#22e1ff` |
 | Text | `#eaffff`; muted `#6fd8ee` |
 | Accent | cyan `#22e1ff`; light `#7dfcff`; magenta `#ff3df0` |
-| HUD values | health `#b6ff3d`, mass `#ff3df0`, score `#ffe14d`, input `#7dfcff`, FFB `#ff8a3d` |
+| HUD values | health `#b6ff3d`, mass `#ff3df0`, score `#ffe14d`, wave `#c9a0ff`, input `#7dfcff`, FFB `#ff8a3d` |
 | Magnet steel | `#c6cfdf`; poles `#e0a04a` / `#7aa7ff` |
 | Orb (amber / blue) | `#e0a04a` / `#7aa7ff` |
+| Power orb / unstable power | `#5dff9b` / `#d4ff6a` |
 | Core healthy / warn / crit | `#57d38c` / `#e0a04a` / `#ff5a5f` |
 
 ### Shapes & effects
@@ -173,7 +174,7 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 - **Black hole:** dark event horizon at the centre with a glowing accretion/health ring (no extra rings/lines).
 - **Bridges:** glowing particles flow **inward** from each pole to the event horizon (no solid bar or drawn lines). Orbs feed energy **into their pole**, which then forwards it to the centre — never orb → centre directly.
 - **Orbs:** glowing circles; volatile orbs get a red ring. Power orbs are green; unstable power orbs get a lime/white pulsing ring.
-- **Incoming edge glow:** an orb still outside the viewport casts a soft colored glow from a marker just outside the screen edge (`EDGE_GLOW_OFFSET`), so it reads as an off-screen light source rather than an orb materialising at the edge. It fades in gradually from spawn and reaches full brightness as it reaches the marker (red and faster-pulsing for unstable orbs).
+- **Incoming edge glow:** an orb still outside the viewport casts a soft colored glow from a marker just outside the screen edge (`EDGE_GLOW_OFFSET`), so it reads as an off-screen light source rather than an orb materialising at the edge. It fades in gradually from spawn and reaches full brightness as it reaches the marker. Unstable orbs pulse red; power orbs glow green/lime, faster when unstable.
 - **Stuck orbs:** clustered on the pole with a glow; gentle pulse.
 - **Overload:** as spin load builds, a pulsing red glow builds around both poles and a soft red glow grows inward from all four screen edges; at full overload both pulse clearly. Hard contacts add a small orange shock ring (regular) or a full unstable blast (volatile).
 - **Wave banner:** large centered neon `WAVE N` text with a modifier subtitle, fading in/out; the lull banner shows the wave bonus and next modifier.
@@ -185,8 +186,8 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 - **Particles:** short-lived additive dots with drag; each event colour-coded.
 - **Typography:** system UI sans for HUD; uppercase, letter-spaced micro-labels.
 - **Motion:** snappy spring on the magnet; particles ease out; no unnecessary UI animation.
-- **Interface:** glowing uppercase HUD with color-coded values; sharp neon-outlined buttons with a filled cyan primary; **Settings** is a modal with a dimmed/blurred backdrop and an × close button.
-- **Screen treatment:** subtle scanlines and an edge vignette; overlays stay legible on short/landscape screens (scroll + compact layout).
+- **Interface:** glowing uppercase HUD with color-coded values; sharp neon-outlined buttons with a filled cyan primary; **Settings** and **Help** are modals with a dimmed/blurred backdrop and an × close button.
+- **Screen treatment:** subtle scanlines and an edge vignette; overlays stay legible on short/landscape screens (scroll + compact layout). Installed/fullscreen mode uses `viewport-fit=cover` and safe-area insets so the HUD and modals clear notches/status bars.
 
 ### Audio (implemented, procedural)
 - **Energy transfer:** a continuous filtered-noise **hiss/whoosh** whose bandpass pitch and gain track the transfer rate (absorbing orbs + orbs near a pole). Short up/down whooshes mark catches and sheds.
@@ -268,12 +269,11 @@ Tuning goals: ~30–45 s to first "heavy" feel; fast spins naturally shed the ou
 - **Full-viewport canvas**; HUD and controls overlay on top (no letterboxing).
 - **Start gate:** a story-focused intro with **Start/Continue**, **New run** (only when progress exists) and **Help** buttons; Start/Continue resumes the saved wave. Tapping Start begins play (no auto-start). The overlay scrolls and compacts on short/landscape screens. On failure the same overlay shows results + **Retry wave N** / **New run** (when progress exists) and **Help**.
 - **Wave announcement:** a brief, non-blocking canvas banner below the HUD at wave start and during the lull (next modifier), plus an audio chime and HUD `Wave` field.
-- **Help dialog:** consolidates controls and the orb legend (amber/blue polarity, red unstable, green power orbs) plus overload/wave notes. Accessible from the topbar and start/game-over overlays; opening it **pauses play**.
 - HUD (top-left): neon color-coded `Health`, `Mass`, `Score`, `Wave`, `Input` (source + FFB), `FFB`; brand wordmark.
 - Top-right: **Connect wheel** (only with WebHID support; regular until a previously authorized device is found, then highlighted), **Settings**, **Help**, **Restart** + status. While connected, the button is replaced by the device name; **Settings → Wheel / stick** offers disconnect. The browser device picker pauses play until it closes. Without WebHID, wheel/stick controls are hidden.
 - **Settings modal:** Controls (touch sensitivity), Audio (Mute, Master, Music) and Wheel (disconnect when connected, FFB strength, rotation range); opening it **pauses play** and stops FFB; close via ×, backdrop or Esc.
-- **Help modal:** controls, orb legend, overload and wave notes; pauses play; close via ×, backdrop or Esc.
-- Game over overlay: score + caught/unstable counts, **Restart**.
+- **Help modal:** controls, orb legend (amber/blue, red unstable, green power), overload and wave notes; accessible from the topbar and start/game-over overlays; opening it **pauses play**; close via ×, backdrop or Esc.
+- Game over overlay: score, wave reached, caught/unstable counts, **Retry wave N**, **New run** (when progress exists) and **Help**.
 - Audio suspends when the tab is hidden and resumes on return.
 
 ## 10. Technical
@@ -294,6 +294,8 @@ Tuning goals: ~30–45 s to first "heavy" feel; fast spins naturally shed the ou
 
 ## 12. Open questions
 
-- Should the magnet be a bar (two poles) or a single directional pole?
-- Is catching *reward* enough, or should caught orbs be "ammo" to fling at hazards?
-- Should the core ever regenerate?
+- Should gamepads get rumble/FFB feedback?
+- Should the PWA add a service worker for offline play?
+- Should power orbs remain baseline spawns as well as a Power wave?
+- Should there be a finite run/victory condition?
+- Should a catch-streak multiplier be added to scoring?
