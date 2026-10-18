@@ -15,13 +15,13 @@ You are a **rotating bar magnet** guarding a core. Iron orbs drift in from all d
 ## 2. Design pillars
 
 1. **Rotation-first** — every interaction is angle/angular velocity; no buttons needed.
-2. **Weight is the resource** — catching protects you but makes you worse; shedding is relief but costs positioning.
+2. **Weight is the tradeoff** — catching protects you but makes you heavier and less responsive; fast spinning can shed orbs as a realistic physical consequence, not a player goal.
 3. **Feel the field** — force feedback communicates mass and impacts, never required to play.
 4. **Readable chaos** — dark, high-contrast, glowing shapes; the player always sees threat, mass, and health.
 
 ## 3. Core loop
 
-Catch orbs → gain mass/inertia → magnet becomes sluggish → spin to shed → reposition to catch the next wave. Difficulty rises until the core is breached.
+Catch orbs → gain mass/inertia → magnet becomes sluggish → reposition and keep catching. Fast spins can naturally shed stuck orbs, but shedding is an emergent consequence, not an objective. Difficulty rises until the core is breached.
 
 ## 4. Input
 
@@ -32,10 +32,12 @@ A single abstract value: **target angle** `θ` in degrees (may be unbounded for 
 | Wheel (WebHID) | `wheel.rotation` (absolute, ±maxRotation/2) | Yes | Optional; auto-selected when moved |
 | Keyboard | hold ←/→ or A/D, integrate ±rate (unbounded) | No | Best for continuous spin |
 | Mouse | pointer X → absolute angle (bounded ±range) | No | Simple aiming |
-| Touch | drag on the canvas → pointer X → absolute angle | No | Mobile/tablet |
+| Touch | drag delta → unbounded angle; anchors on touch-down | No | Mobile/tablet; sensitivity adjustable |
 | Gamepad | left-stick X / wheel axis (planned) | No | Add via same interface |
 
 - Input module: `input.js` (`SteeringInput`), exposes `angle`, `source`, `ffbActive`, `update(dt)`, `applyForce(v)`, `stopFfb()`.
+- **Touch uses relative drag:** the first touch anchors at the current angle, and finger movement adds rotation (`2.77°/px` at 100% sensitivity). Lifting and touching again continues from the current angle without a jump.
+- **Touch sensitivity** is adjustable in Settings (35–100%, default 100%) and persisted.
 - **Gameplay must not depend on FFB.** Visual/HUD cues carry all critical info.
 
 ## 5. Mechanics
@@ -57,6 +59,7 @@ I = I0 + Σ m_orb
 - A gentle **core gravity well** (`CORE_PULL`) accelerates free orbs toward the centre, speed-capped at `MAX_ORB_SPEED`.
 - Each free orb is pulled toward the **nearest pole** within `ATTRACT_R`:
   `a = PULL · (1 − d/ATTRACT_R)` toward the pole.
+- A matching pole's pull **fades to zero** between `POLE_INNER_REACH` (`BAR_HALF − POLE_R`) and `BAR_HALF`, so once an orb gets between the centre and a pole the core gravity wins instead of the pole reeling it back out.
 - Contact within `POLE_R` of a matching pole → **caught** (sticks).
 - The **pole orbs are physical**: free orbs bounce off them and never pass through; the opposite-colour pole can bat them away. Each impact gives a force-feedback jolt proportional to impact speed. The bridge between the poles is energy, not a solid body.
 
@@ -66,6 +69,7 @@ I = I0 + Σ m_orb
 - Displayed as `Mass` in the HUD.
 
 ### 5.4 Shedding (buttonless detach)
+Shedding is an **emergent physical response** to fast rotation, not an intended player objective or scoring route.
 Primary: **centrifugal (gradual)** — an orb detaches when `ω²·r > SHED_ACCEL` **and the pole is moving away from it** at that speed (outermost first), at most one per `SHED_INTERVAL`; released tangentially with a modest outward bias. A detached orb has a short no-catch window (0.25 s) so it cannot instantly reattach. Spinning no longer clears everything instantly.
 Secondary: **hard capacity** — if `stuck ≥ MAX_STUCK`, the oldest orb is ejected automatically (prevents a dead-end).
 A detached orb becomes an ordinary free orb again: it keeps its polarity colour and can be re-caught. Its remaining energy (`size / ORB_SIZE`) scales its radius and the core damage it deals.
@@ -167,6 +171,7 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 | `POLE_BODY_R` | 10 | physical pole-orb radius (orbs bounce off) |
 | `BOUNCE` | 0.75 | restitution when an orb hits a pole |
 | `ATTRACT_R` | 150 | attraction range |
+| `POLE_INNER_REACH` | 63 (`BAR_HALF − POLE_R`) | matching-pole pull starts fading here; zero inside, full at `BAR_HALF` |
 | `PULL` | 550 | attraction accel at the pole |
 | `REPEL` | 0.6 | opposite-pole push (fraction of pull) |
 | `REPEL_RANGE` | 1.2× `ATTRACT_R` | wrong pole acts from slightly further away |
@@ -199,7 +204,7 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 | `EXPLOSION_TORQUE` | 5 rad/s | angular kick to the magnet |
 | `EXPLOSION_DAMAGE` | 12 | core damage if the blast is close |
 
-Tuning goals: ~30–45 s to first "heavy" feel; shedding should be attainable in one committed spin; no death spiral.
+Tuning goals: ~30–45 s to first "heavy" feel; fast spins naturally shed the outermost orbs (emergent, not required); no death spiral.
 
 ## 9. UX / onboarding
 
@@ -207,7 +212,7 @@ Tuning goals: ~30–45 s to first "heavy" feel; shedding should be attainable in
 - **Start gate:** a help overlay with controls and a **Start** button; tapping it begins play (no auto-start). The overlay scrolls and compacts on short/landscape screens. On failure the same overlay shows results + **Restart**.
 - HUD (top-left): neon color-coded `Health`, `Mass`, `Score`, `Input` (source + FFB), `FFB`; brand wordmark.
 - Top-right: **Connect wheel** (optional), **Settings**, **Restart** + status.
-- **Settings modal:** Audio (Mute, Master, Music) and Wheel (FFB strength, rotation range); opening it **pauses play** and stops FFB; close via ×, backdrop or Esc.
+- **Settings modal:** Controls (touch sensitivity), Audio (Mute, Master, Music) and Wheel (FFB strength, rotation range); opening it **pauses play** and stops FFB; close via ×, backdrop or Esc.
 - Game over overlay: score + caught/unstable counts, **Restart**.
 - Audio suspends when the tab is hidden and resumes on return.
 

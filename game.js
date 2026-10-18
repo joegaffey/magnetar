@@ -1,5 +1,5 @@
-import { SteeringInput } from './input.js?v=20261017b';
-import { AudioEngine } from './audio.js?v=20261017b';
+import { SteeringInput } from './input.js?v=20261018d';
+import { AudioEngine } from './audio.js?v=20261018d';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -22,6 +22,8 @@ const musicInput = document.getElementById('music');
 const musicVal = document.getElementById('musicVal');
 const settingsModal = document.getElementById('settingsModal');
 const settingsClose = document.getElementById('settingsClose');
+const touchSensitivityInput = document.getElementById('touchSensitivity');
+const touchSensitivityVal = document.getElementById('touchSensitivityVal');
 
 let W = 0, H = 0, CX = 0, CY = 0, DPR = 1;
 
@@ -46,6 +48,7 @@ const POLE_R = 22;             // surface-contact catch radius
 const POLE_BODY_R = 10;        // physical pole radius (orb-like)
 const BOUNCE = 0.75;
 const ATTRACT_R = 150;
+const POLE_INNER_REACH = BAR_HALF - POLE_R; // pole pull fades to zero inside this radius
 const PULL = 550;
 const REPEL = 0.6;             // opposite pole push
 const REPEL_RANGE = ATTRACT_R * 1.2;
@@ -75,7 +78,16 @@ const EXPLOSION_FORCE = 850;
 const EXPLOSION_TORQUE = 5;
 const EXPLOSION_DAMAGE = 12;
 
-const input = new SteeringInput({ keyRate: 540, mouseRange: 540 });
+const storedTouchSensitivity = parseFloat(localStorage.getItem('magnetar-touch-sensitivity'));
+const initialTouchSensitivity = Number.isFinite(storedTouchSensitivity)
+  ? Math.max(0.35, Math.min(1, storedTouchSensitivity))
+  : 1;
+
+const input = new SteeringInput({
+  keyRate: 540,
+  mouseRange: 540,
+  touchSensitivity: initialTouchSensitivity
+});
 const audio = new AudioEngine();
 
 let magnet = { phi: 0, omega: 0 };
@@ -137,7 +149,7 @@ function reset() {
   health = 100; score = 0; caught = 0; exploded = 0; streak = 0;
   difficulty = 0; spawnTimer = 0.9; spawnEvery = 1.6;
   running = true; over = false; shedCooldown = 0; jolt = 0; joltForce = 0;
-  input.angle = 0;
+  input.reset();
   audio.init();
   audio.setMusicIntensity(0.2);
   overlay.classList.add('hidden');
@@ -367,14 +379,16 @@ function step(dt) {
   for (let i = orbs.length - 1; i >= 0; i--) {
     const o = orbs[i];
     if (o.noCatch > 0) o.noCatch -= dt;
+    const coreDist = Math.hypot(o.x - CX, o.y - CY);
+    const innerFade = clamp((coreDist - POLE_INNER_REACH) / POLE_R, 0, 1);
 
     for (const { p, aff } of ps) {
       const dx = o.x - p.x, dy = o.y - p.y;
       const d = Math.hypot(dx, dy) || 0.001;
       const ux = dx / d, uy = dy / d;
       if (aff === o.pol) {
-        if (d < ATTRACT_R) {
-          const f = PULL * (1 - d / ATTRACT_R);
+        if (d < ATTRACT_R && innerFade > 0) {
+          const f = PULL * (1 - d / ATTRACT_R) * innerFade;
           o.vx -= ux * f * dt;
           o.vy -= uy * f * dt;
         }
@@ -769,6 +783,17 @@ wheelRangeInput.addEventListener('input', () => {
   input.setMaxRotation(parseInt(wheelRangeInput.value));
 });
 
+if (touchSensitivityInput) {
+  touchSensitivityInput.value = Math.round(initialTouchSensitivity * 100);
+  touchSensitivityVal.textContent = touchSensitivityInput.value + '%';
+  touchSensitivityInput.addEventListener('input', () => {
+    const v = parseInt(touchSensitivityInput.value, 10) / 100;
+    input.setTouchSensitivity(v);
+    touchSensitivityVal.textContent = touchSensitivityInput.value + '%';
+    localStorage.setItem('magnetar-touch-sensitivity', String(v));
+  });
+}
+
 const storedMute = localStorage.getItem('magnetar-muted') === '1';
 audio.setMuted(storedMute);
 muteToggle.checked = storedMute;
@@ -819,21 +844,31 @@ canvas.addEventListener('mousemove', (e) => {
 
 function touchPoint(e) {
   const t = e.touches[0] || e.changedTouches[0];
+  if (!t) return null;
   const r = canvas.getBoundingClientRect();
-  return { x: t.clientX - r.left, width: r.width };
+  return { x: t.clientX - r.left, width: r.width, id: t.identifier };
 }
 canvas.addEventListener('touchstart', (e) => {
   e.preventDefault();
   const p = touchPoint(e);
-  input.setPointer(p.x, p.width, 'touch');
+  if (p) input.touchStart(p.x, p.width, p.id);
 }, { passive: false });
 canvas.addEventListener('touchmove', (e) => {
   e.preventDefault();
   const p = touchPoint(e);
-  input.setPointer(p.x, p.width, 'touch');
+  if (p) input.touchMove(p.x, p.width, p.id);
+}, { passive: false });
+canvas.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  input.touchEnd(t ? t.identifier : null);
+}, { passive: false });
+canvas.addEventListener('touchcancel', (e) => {
+  const t = e.changedTouches[0];
+  input.touchEnd(t ? t.identifier : null);
 }, { passive: false });
 
-input.angle = 0;
+input.reset();
 running = false;
 syncHud();
 requestAnimationFrame(frame);

@@ -4,14 +4,14 @@
 
 A one-axis survival game about catching iron orbs on a rotating magnet while they spiral into a black hole.
 
-Every orb that sticks adds mass — the magnet lags and becomes harder to control. Left alone, stuck orbs are slowly absorbed into the black hole, feeding it and restoring its strength. Grab too eagerly or spin too fast and you'll shed your catch before it pays off.
+Every orb that sticks adds mass — the magnet lags and becomes harder to control. Left alone, stuck orbs are slowly absorbed into the black hole, feeding it and restoring its strength. Spinning fast can naturally shake orbs loose before they are absorbed — that is a physical consequence of rotation, not a goal in itself.
 
 ## Play
 
-- **Rotate the magnet** with `←/→` (or `A/D`), move the mouse, or drag on a touchscreen.
+- **Rotate the magnet** with `←/→` (or `A/D`), move the mouse, or drag on a touchscreen (relative drag; sensitivity in Settings).
 - Present the **matching pole** (amber ↔ amber, blue ↔ blue) to catch an orb; the opposite pole repels it.
 - Let caught orbs **be absorbed** to restore the core.
-- **Avoid spinning fast** — it detaches orbs; they keep their polarity and can be re-caught, and a detached orb reaching the core damages by its remaining energy.
+- **Spinning fast naturally detaches orbs** — they keep their polarity and can be re-caught, and a detached orb reaching the core damages by its remaining energy. Shedding is not a goal, just a consequence.
 - Keep orbs from reaching the core.
 
 ## Mechanics
@@ -35,7 +35,7 @@ A small music loop can be layered in later without changing the event API.
 
 Magnetar is built to be played with a real **force-feedback steering wheel**, with no drivers, via the [**webhid-wheel**](https://github.com/joegaffey/webhid-wheel) project.
 
-Click **Connect wheel** and pick your wheelbase — it becomes the steering axis, and its FFB reflects the magnet's mass and rotation (the heavier it gets, the heavier the wheel feels). Use **Settings** (pauses play) to adjust **FFB strength**, **rotation range** (match your wheel's lock-to-lock for 1:1 steering), **Master/Music** volume and **mute**. Keyboard, mouse and touch always work, so a wheel is entirely optional.
+Click **Connect wheel** and pick your wheelbase — it becomes the steering axis, and its FFB reflects the magnet's mass and rotation (the heavier it gets, the heavier the wheel feels). Use **Settings** (pauses play) to adjust **touch sensitivity**, **FFB strength**, **rotation range** (match your wheel's lock-to-lock for 1:1 steering), **Master/Music** volume and **mute**. Keyboard, mouse and touch always work, so a wheel is entirely optional.
 
 ## Run
 
@@ -54,7 +54,7 @@ Most feel lives in `game.js`:
 
 - Magnet: `K_TORQUE`, `D_TORQUE`, `BASE_I`, `ORB_MASS`.
 - Orbs: `CORE_PULL`, `ORB_DRAG`, `MAX_ORB_SPEED`, spawn rate/speed.
-- Poles: `BAR_HALF`, `ATTRACT_R`, `POLE_R`, `PULL`, `REPEL`, `REPEL_RANGE`.
+- Poles: `BAR_HALF`, `ATTRACT_R`, `POLE_INNER_REACH`, `POLE_R`, `PULL`, `REPEL`, `REPEL_RANGE`.
 - Absorption: `ABSORB_TIME`, `HEAL_PER_ORB`.
 - Shedding: `SHED_ACCEL`, `SHED_INTERVAL`, `MAX_STUCK`.
 - Volatile orbs: `VOLATILE_CHANCE`, `EXPLOSION_*`.

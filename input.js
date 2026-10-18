@@ -9,15 +9,18 @@ import { WebHIDWheel } from './vendor/webhid-wheel.js';
  *  - wheel: absolute rotation
  *  - keyboard: hold Left/Right (or A/D) to rotate continuously
  *  - mouse: pointer X maps to an absolute angle
+ *  - touch: relative drag, anchored on touch-down
  */
 export class SteeringInput {
-  constructor({ keyRate = 540, mouseRange = 540 } = {}) {
+  constructor({ keyRate = 540, mouseRange = 540, touchSensitivity = 1, touchDegPerPx = 2.77 } = {}) {
     this.angle = 0;
     this.source = 'keys';
     this.wheel = null;
     this.ffbAvailable = false;
     this.keyRate = keyRate;
     this.mouseRange = mouseRange;
+    this.touchSensitivity = Math.max(0.05, Math.min(2, touchSensitivity));
+    this.touchDegPerPx = touchDegPerPx;
 
     this._keys = { left: false, right: false };
     this._pointer = { x: null, width: 1 };
@@ -25,6 +28,8 @@ export class SteeringInput {
     this._lastPointer = -Infinity;
     this._pointerKind = 'mouse';
     this._prevWheelRot = null;
+    this._pointerAngle = null;
+    this._touch = { active: false, id: null, anchorX: 0, anchorAngle: 0 };
 
     window.addEventListener('keydown', (e) => this._onKey(e, true));
     window.addEventListener('keyup', (e) => this._onKey(e, false));
@@ -41,6 +46,55 @@ export class SteeringInput {
     this._pointer.width = width || 1;
     this._lastPointer = performance.now();
     this._pointerKind = kind;
+  }
+
+  setTouchSensitivity(value) {
+    const v = Number(value);
+    if (Number.isFinite(v)) this.touchSensitivity = Math.max(0.05, Math.min(2, v));
+  }
+
+  reset() {
+    this.angle = 0;
+    this.source = 'keys';
+    this._pointer.x = null;
+    this._pointerAngle = null;
+    this._lastPointer = -Infinity;
+    this._touch.active = false;
+    this._touch.id = null;
+  }
+
+  touchStart(x, width, id = null) {
+    if (x === null || x === undefined) return;
+    if (this._touch.active) return;
+    this._pointer.x = x;
+    this._pointer.width = width || 1;
+    this._lastPointer = performance.now();
+    this._pointerKind = 'touch';
+    this._touch.active = true;
+    this._touch.id = id;
+    this._touch.anchorX = x;
+    this._touch.anchorAngle = this.angle;
+    this._pointerAngle = this.angle;
+  }
+
+  touchMove(x, width, id = null) {
+    if (x === null || x === undefined) return;
+    if (!this._touch.active) return;
+    if (id !== null && this._touch.id !== null && id !== this._touch.id) return;
+    this._pointer.x = x;
+    this._pointer.width = width || 1;
+    this._lastPointer = performance.now();
+    this._pointerKind = 'touch';
+    const dx = x - this._touch.anchorX;
+    this._pointerAngle = this._touch.anchorAngle + dx * this.touchDegPerPx * this.touchSensitivity;
+  }
+
+  touchEnd(id = null) {
+    if (!this._touch.active) return;
+    if (id !== null && this._touch.id !== null && id !== this._touch.id) return;
+    this._touch.active = false;
+    this._touch.id = null;
+    this._lastPointer = performance.now();
   }
 
   async connectWheel(opts = {}) {
@@ -85,7 +139,9 @@ export class SteeringInput {
 
     if (this.source === 'wheel' && this.wheel && this.wheel.rotation !== undefined) {
       this.angle = this.wheel.rotation;
-    } else if ((this.source === 'mouse' || this.source === 'touch') && this._pointer.x !== null) {
+    } else if (this.source === 'touch' && this._pointerAngle !== null) {
+      this.angle = this._pointerAngle;
+    } else if (this.source === 'mouse' && this._pointer.x !== null) {
       const n = (this._pointer.x / this._pointer.width - 0.5) * 2;
       this.angle = n * this.mouseRange;
     } else if (this.source === 'keys') {
