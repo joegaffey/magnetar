@@ -8,7 +8,7 @@ Every orb that sticks adds mass — the magnet lags and becomes harder to contro
 
 ## Play
 
-- **Rotate the magnet** with `←/→` (or `A/D`), move the mouse, or drag on a touchscreen (relative drag; sensitivity in Settings).
+- **Rotate the magnet** with `←/→` (or `A/D`), move the mouse, drag on a touchscreen (relative drag; sensitivity in Settings), or use a gamepad left stick / D-pad.
 - Present the **matching pole** (amber ↔ amber, blue ↔ blue) to catch an orb; the opposite pole repels it.
 - Let caught orbs **be absorbed** to restore the core.
 - **Spinning fast naturally detaches orbs** — they keep their polarity and can be re-caught, and a detached orb reaching the core damages by its remaining energy. Sustained high speed overloads the poles; while they glow red, any contact detonates. Shedding is a consequence, not a goal.
@@ -37,7 +37,7 @@ A small music loop can be layered in later without changing the event API.
 
 Magnetar is built to be played with a real **force-feedback steering wheel**, with no drivers, via the [**webhid-wheel**](https://github.com/joegaffey/webhid-wheel) project.
 
-When WebHID is available, a **Connect wheel** button appears in the top bar. It is a regular secondary action by default and becomes highlighted when a previously authorized device is detected. Opening the browser picker pauses play until it closes. Pick your device — it becomes the steering axis, and its FFB reflects the magnet's mass and rotation (the heavier it gets, the heavier the wheel feels). After connecting, the button is replaced by the device name; use **Settings → Wheel / stick** to disconnect. Use **Settings** (pauses play) to adjust **touch sensitivity**, **FFB strength**, **rotation range** (match your wheel's lock-to-lock for 1:1 steering), **Master/Music** volume and **mute**. Flight sticks exposing a usable HID axis may also work, though FFB support depends on the device. On browsers without WebHID the wheel/stick UI is hidden. Keyboard, mouse and touch always work, so a wheel or stick is entirely optional.
+When WebHID is available, a **Connect wheel** button appears in the top bar. It is a regular secondary action by default and becomes highlighted when a previously authorized device is detected. Opening the browser picker pauses play until it closes. Pick your device — it becomes the steering axis, and its FFB reflects the magnet's mass and rotation (the heavier it gets, the heavier the wheel feels). After connecting, the button is replaced by the device name; use **Settings → Wheel / stick** to disconnect. Use **Settings** (pauses play) to adjust **touch sensitivity**, **FFB strength**, **rotation range** (match your wheel's lock-to-lock for 1:1 steering), **Master/Music** volume and **mute**. Flight sticks exposing a usable HID axis may also work, though FFB support depends on the device. On browsers without WebHID the wheel/stick UI is hidden. Keyboard, mouse, touch and gamepad always work, so a wheel or stick is entirely optional.
 
 ## Run
 
@@ -46,7 +46,7 @@ npx serve
 # open the URL it prints (e.g. http://localhost:3000)
 ```
 
-Use a Chromium-based browser with WebHID for wheel/flight-stick input; keyboard, mouse and touch work in any modern browser.
+Use a Chromium-based browser with WebHID for wheel/flight-stick input; keyboard, mouse, touch and gamepad work in any modern browser.
 
 The wheel library is vendored at [`vendor/webhid-wheel.js`](./vendor/webhid-wheel.js) (a copy of [webhid-wheel](https://github.com/joegaffey/webhid-wheel)) so the page is self-contained; refresh it from that repo when the library changes.
 
@@ -60,6 +60,7 @@ Most feel lives in `game.js`:
 - Absorption: `ABSORB_TIME`, `HEAL_PER_ORB`.
 - Shedding: `SHED_ACCEL`, `SHED_INTERVAL`, `MAX_STUCK`.
 - Overload: `OVERSPEED_LOAD_THRESHOLD`, `OVERLOAD_RISE_TIME`, `OVERLOAD_DECAY_TIME`, `OVERLOAD_SPIN_DAMP`, `OVERLOAD_DRAIN`, `OVERSPEED_*_DAMAGE`.
+- Gamepad: `gamepadRate`, `gamepadDeadzone` in `input.js`.
 - Volatile orbs: `VOLATILE_CHANCE`, `EXPLOSION_*`.
 
 See [`SPEC.md`](./SPEC.md) for the full design notes and parameter table.

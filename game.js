@@ -1,5 +1,5 @@
-import { SteeringInput } from './input.js?v=20261018af';
-import { AudioEngine } from './audio.js?v=20261018af';
+import { SteeringInput } from './input.js?v=20261018ag';
+import { AudioEngine } from './audio.js?v=20261018ag';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -947,11 +947,11 @@ async function refreshWheelConnectUI() {
     wheelSettingsGroup.classList.add('hidden');
     disconnectButton.classList.add('hidden');
     statusEl.textContent = 'Keys / mouse ready';
-    if (hintEl) hintEl.textContent = '\u2190/\u2192 or A/D \u00b7 mouse \u00b7 touch';
+    if (hintEl) hintEl.textContent = 'gamepad \u00b7 \u2190/\u2192 or A/D \u00b7 mouse \u00b7 touch';
     return;
   }
 
-  if (hintEl) hintEl.textContent = 'wheel \u00b7 \u2190/\u2192 or A/D \u00b7 mouse \u00b7 touch';
+  if (hintEl) hintEl.textContent = 'wheel \u00b7 gamepad \u00b7 \u2190/\u2192 or A/D \u00b7 mouse \u00b7 touch';
   wheelSettingsGroup.classList.remove('hidden');
   const connected = !!(input.wheel && input.wheel.isConnected);
   if (connected) {

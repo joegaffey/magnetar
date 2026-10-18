@@ -9,7 +9,7 @@ You are a **rotating bar magnet** guarding a core. Iron orbs drift in from all d
 - **Genre:** physics survival / arcade resource management
 - **Perspective:** 2D top-down
 - **Session:** 2–6 minutes
-- **Platform:** web (canvas), Chromium for wheel/FFB; any modern browser for keyboard/mouse
+- **Platform:** web (canvas), Chromium for wheel/FFB; any modern browser for keyboard/mouse/touch/gamepad
 - **Controls:** one axis only (no buttons required)
 
 ## 2. Design pillars
@@ -33,11 +33,12 @@ A single abstract value: **target angle** `θ` in degrees (may be unbounded for 
 | Keyboard | hold ←/→ or A/D, integrate ±rate (unbounded) | No | Best for continuous spin |
 | Mouse | pointer X → absolute angle (bounded ±range) | No | Simple aiming |
 | Touch | drag delta → unbounded angle; anchors on touch-down | No | Mobile/tablet; sensitivity adjustable |
-| Gamepad | left-stick X / wheel axis (planned) | No | Add via same interface |
+| Gamepad | left-stick X or D-pad ←/→, integrate ±rate (unbounded) | No | Standard mapping; auto-detected via Gamepad API |
 
 - Input module: `input.js` (`SteeringInput`), exposes `angle`, `source`, `ffbActive`, `update(dt)`, `applyForce(v)`, `stopFfb()`.
 - **Touch uses relative drag:** the first touch anchors at the current angle, and finger movement adds rotation (`2.77°/px` at 100% sensitivity). Lifting and touching again continues from the current angle without a jump.
 - **Touch sensitivity** is adjustable in Settings (35–100%, default 100%) and persisted.
+- **Gamepad:** polled via the Gamepad API, using left-stick X or D-pad buttons 14/15 with a 0.15 deadzone and ±540°/s rate. Auto-detected; no setup or permission prompt.
 - **Gameplay must not depend on FFB.** Visual/HUD cues carry all critical info.
 
 ## 5. Mechanics
@@ -248,7 +249,7 @@ Tuning goals: ~30–45 s to first "heavy" feel; fast spins naturally shed the ou
 - **M1 — feel pass:** tune inertia/shed/attraction; make weight legible; verify wheel FFB.
 - **M2 — art/juice (done):** neon Geometry-Wars palette, bloom, particles, vignette/scanlines, HUD.
 - **M3 — content (in progress):** unstable orbs done; remaining orb types, wave events, combos, difficulty tiers.
-- **M4 — inputs (mostly done):** wheel/keyboard/mouse/touch + settings/pause; gamepad planned.
+- **M4 — inputs (mostly done):** wheel/keyboard/mouse/touch/gamepad + settings/pause.
 
 ## 12. Open questions
 

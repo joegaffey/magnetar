@@ -10,9 +10,10 @@ import { WebHIDWheel } from './vendor/webhid-wheel.js';
  *  - keyboard: hold Left/Right (or A/D) to rotate continuously
  *  - mouse: pointer X maps to an absolute angle
  *  - touch: relative drag, anchored on touch-down
+ *  - gamepad: left stick X or D-pad Left/Right rotates continuously
  */
 export class SteeringInput {
-  constructor({ keyRate = 540, mouseRange = 540, touchSensitivity = 1, touchDegPerPx = 2.77 } = {}) {
+  constructor({ keyRate = 540, mouseRange = 540, touchSensitivity = 1, touchDegPerPx = 2.77, gamepadRate = 540, gamepadDeadzone = 0.15 } = {}) {
     this.angle = 0;
     this.source = 'keys';
     this.wheel = null;
@@ -21,15 +22,19 @@ export class SteeringInput {
     this.mouseRange = mouseRange;
     this.touchSensitivity = Math.max(0.05, Math.min(2, touchSensitivity));
     this.touchDegPerPx = touchDegPerPx;
+    this.gamepadRate = gamepadRate;
+    this.gamepadDeadzone = Math.max(0, Math.min(0.9, gamepadDeadzone));
 
     this._keys = { left: false, right: false };
     this._pointer = { x: null, width: 1 };
     this._lastWheel = -Infinity;
     this._lastPointer = -Infinity;
+    this._lastGamepad = -Infinity;
     this._pointerKind = 'mouse';
     this._prevWheelRot = null;
     this._pointerAngle = null;
     this._touch = { active: false, id: null, anchorX: 0, anchorAngle: 0 };
+    this._gamepad = { dir: 0, active: false };
 
     window.addEventListener('keydown', (e) => this._onKey(e, true));
     window.addEventListener('keyup', (e) => this._onKey(e, false));
@@ -38,6 +43,45 @@ export class SteeringInput {
   _onKey(e, down) {
     if (e.code === 'ArrowLeft' || e.code === 'KeyA') { this._keys.left = down; e.preventDefault(); }
     if (e.code === 'ArrowRight' || e.code === 'KeyD') { this._keys.right = down; e.preventDefault(); }
+  }
+
+  _pollGamepad(now) {
+    let pad = null;
+    try {
+      if (typeof navigator !== 'undefined' && navigator.getGamepads) {
+        const pads = navigator.getGamepads();
+        for (let i = 0; i < pads.length; i++) {
+          const p = pads[i];
+          if (p && p.connected) { pad = p; break; }
+        }
+      }
+    } catch {
+      pad = null;
+    }
+
+    if (!pad) {
+      this._gamepad.dir = 0;
+      this._gamepad.active = false;
+      return this._gamepad;
+    }
+
+    let raw = pad.axes && pad.axes.length ? Number(pad.axes[0]) : 0;
+    if (!Number.isFinite(raw)) raw = 0;
+    raw = Math.max(-1, Math.min(1, raw));
+
+    const dz = this.gamepadDeadzone;
+    let dir = Math.abs(raw) <= dz ? 0 : Math.sign(raw) * ((Math.abs(raw) - dz) / (1 - dz));
+
+    const buttons = pad.buttons || [];
+    if (buttons[14] && buttons[14].pressed) dir -= 1;
+    if (buttons[15] && buttons[15].pressed) dir += 1;
+    dir = Math.max(-1, Math.min(1, dir));
+
+    const active = Math.abs(dir) > 0.01;
+    if (active) this._lastGamepad = now;
+    this._gamepad.dir = dir;
+    this._gamepad.active = active;
+    return this._gamepad;
   }
 
   setPointer(x, width, kind = 'mouse') {
@@ -59,8 +103,11 @@ export class SteeringInput {
     this._pointer.x = null;
     this._pointerAngle = null;
     this._lastPointer = -Infinity;
+    this._lastGamepad = -Infinity;
     this._touch.active = false;
     this._touch.id = null;
+    this._gamepad.dir = 0;
+    this._gamepad.active = false;
   }
 
   touchStart(x, width, id = null) {
@@ -125,6 +172,7 @@ export class SteeringInput {
 
   update(dt) {
     const now = performance.now();
+    const gamepad = this._pollGamepad(now);
 
     if (this.wheel && this.wheel.rotation !== undefined) {
       if (this._prevWheelRot === null || Math.abs(this.wheel.rotation - this._prevWheelRot) > 0.05) {
@@ -135,6 +183,7 @@ export class SteeringInput {
 
     if (this.wheel && now - this._lastWheel < 300) this.source = 'wheel';
     else if (this._keys.left || this._keys.right) this.source = 'keys';
+    else if (now - this._lastGamepad < 300) this.source = 'gamepad';
     else if (now - this._lastPointer < 300) this.source = this._pointerKind;
 
     if (this.source === 'wheel' && this.wheel && this.wheel.rotation !== undefined) {
@@ -147,6 +196,8 @@ export class SteeringInput {
     } else if (this.source === 'keys') {
       const dir = (this._keys.right ? 1 : 0) - (this._keys.left ? 1 : 0);
       this.angle += dir * this.keyRate * dt;
+    } else if (this.source === 'gamepad') {
+      this.angle += gamepad.dir * this.gamepadRate * dt;
     }
 
     return this.angle;
