@@ -1,5 +1,5 @@
-import { SteeringInput } from './input.js?v=20261018ao';
-import { AudioEngine } from './audio.js?v=20261018ao';
+import { SteeringInput } from './input.js?v=20261018as';
+import { AudioEngine } from './audio.js?v=20261018as';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -30,6 +30,8 @@ const settingsModal = document.getElementById('settingsModal');
 const settingsClose = document.getElementById('settingsClose');
 const helpButton = document.getElementById('helpButton');
 const helpFromStart = document.getElementById('helpFromStart');
+const startButton = document.getElementById('startButton');
+const newRunButton = document.getElementById('newRunButton');
 const helpModal = document.getElementById('helpModal');
 const helpClose = document.getElementById('helpClose');
 const touchSensitivityInput = document.getElementById('touchSensitivity');
@@ -204,24 +206,50 @@ function spawnParticles(x, y, color, n, speed, sizeScale = 1) {
   }
 }
 
-function reset() {
+function savedWave() {
+  const n = parseInt(localStorage.getItem('magnetar-last-wave'), 10);
+  return Number.isFinite(n) && n > 0 ? n : 1;
+}
+
+function storeWave(n) {
+  if (n > savedWave()) localStorage.setItem('magnetar-last-wave', String(n));
+}
+
+function updateStartUI(retry = false) {
+  const n = savedWave();
+  if (n > 1) {
+    startButton.textContent = (retry ? 'Retry wave ' : 'Continue wave ') + n;
+    newRunButton.classList.remove('hidden');
+  } else {
+    startButton.textContent = retry ? 'Restart' : 'Start';
+    newRunButton.classList.add('hidden');
+  }
+}
+
+function reset(startWave = savedWave()) {
+  const fromWave = Number.isFinite(startWave) && startWave > 0 ? startWave : 1;
   magnet = { phi: 0, omega: 0 };
   stuck = []; orbs = []; explosions = []; particles = []; streams = []; streamTimer = 0;
   health = 100; score = 0; caught = 0; exploded = 0; streak = 0;
-  wave = 1; waveTimer = 0; wavePhase = 'active'; waveLull = 0; runTime = 0;
+  wave = fromWave; waveTimer = 0; wavePhase = 'active'; waveLull = 0;
+  runTime = Math.max(0, (fromWave - 1) * WAVE_TIME);
   waveModifier = 'normal'; waveNextModifier = null; wavePolFlip = 0;
   waveBanner = null; spawnTimer = 0;
   running = true; over = false; shedCooldown = 0; spinLoad = 0; jolt = 0; joltForce = 0;
   input.reset();
   audio.init();
   audio.setMusicIntensity(0.2);
-  beginWave(1);
+  beginWave(fromWave);
   overlay.classList.add('hidden');
   syncHud();
 }
 
-overlay.querySelector('button').addEventListener('click', () => reset());
-document.getElementById('restartButton').addEventListener('click', () => reset());
+startButton.addEventListener('click', () => reset());
+newRunButton.addEventListener('click', () => {
+  localStorage.removeItem('magnetar-last-wave');
+  reset(1);
+});
+document.getElementById('restartButton').addEventListener('click', () => reset(1));
 
 function inertia() {
   return BASE_I + stuck.reduce((a, o) => a + o.mass, 0);
@@ -245,7 +273,7 @@ function gameOver() {
   overlay.querySelector('h2').textContent = 'Core breached';
   overlay.querySelector('p').textContent = 'Score: ' + score + ' · wave ' + wave + ' · caught ' + caught + ' · unstable ' + exploded + '.';
   overlay.classList.remove('hidden');
-  overlay.querySelector('button').textContent = 'Restart';
+  updateStartUI(true);
   syncHud();
 }
 
@@ -287,6 +315,7 @@ function spawnWaveInterval() {
 
 function beginWave(n) {
   wave = n;
+  storeWave(n);
   waveModifier = waveNextModifier || getWaveModifier(n);
   waveNextModifier = null;
   waveTimer = 0;
@@ -1448,6 +1477,7 @@ canvas.addEventListener('touchcancel', (e) => {
 
 input.reset();
 running = false;
+updateStartUI();
 syncHud();
 refreshWheelConnectUI();
 requestAnimationFrame(frame);

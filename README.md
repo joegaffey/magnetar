@@ -14,6 +14,7 @@ Every orb that sticks adds mass — the magnet lags and becomes harder to contro
 - **Spinning fast naturally detaches orbs** — they keep their polarity and can be re-caught, and a detached orb reaching the core damages by its remaining energy. Sustained high speed overloads the poles; while they glow red, any contact detonates. Shedding is a consequence, not a goal.
 - Keep orbs from reaching the core.
 - Open **Help** for orb types, overload and wave notes; opening it pauses play.
+- Progress saves your highest wave. **Start/Retry** resumes there; **New run** starts from wave 1.
 
 ## Mechanics
 

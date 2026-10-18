@@ -96,6 +96,7 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
   - **Heavy** — higher mass/damage, slower and larger
 - Intro order is deterministic: Normal → Fast → Volatile → Swarm → Polarity → Power → Heavy. After that, a random modifier is chosen without repeating the previous one.
 - A wave banner, permanent HUD `Wave` field and audio cue announce each wave; the lull shows the next modifier.
+- Highest wave reached is persisted (`magnetar-last-wave`). Starting/retrying resumes at that wave with equivalent `runTime`; **New run** clears the stored wave and starts at 1.
 
 ### 5.7 Scoring
 - `+1` per catch. Shedding never scores.
@@ -265,7 +266,7 @@ Tuning goals: ~30–45 s to first "heavy" feel; fast spins naturally shed the ou
 ## 9. UX / onboarding
 
 - **Full-viewport canvas**; HUD and controls overlay on top (no letterboxing).
-- **Start gate:** a story-focused intro with **Start** and **Help** buttons; tapping Start begins play (no auto-start). The overlay scrolls and compacts on short/landscape screens. On failure the same overlay shows results + **Restart** and **Help**.
+- **Start gate:** a story-focused intro with **Start/Continue**, **New run** (only when progress exists) and **Help** buttons; Start/Continue resumes the saved wave. Tapping Start begins play (no auto-start). The overlay scrolls and compacts on short/landscape screens. On failure the same overlay shows results + **Retry wave N** / **New run** (when progress exists) and **Help**.
 - **Wave announcement:** a brief, non-blocking canvas banner below the HUD at wave start and during the lull (next modifier), plus an audio chime and HUD `Wave` field.
 - **Help dialog:** consolidates controls and the orb legend (amber/blue polarity, red unstable, green power orbs) plus overload/wave notes. Accessible from the topbar and start/game-over overlays; opening it **pauses play**.
 - HUD (top-left): neon color-coded `Health`, `Mass`, `Score`, `Wave`, `Input` (source + FFB), `FFB`; brand wordmark.
@@ -279,7 +280,7 @@ Tuning goals: ~30–45 s to first "heavy" feel; fast spins naturally shed the ou
 
 - Files: `index.html`, `game.js`, `audio.js`, `input.js`; wheel library vendored at `vendor/webhid-wheel.js`.
 - Fixed timestep simulation at 120 Hz (`STEP = 1/120`), rendered per `requestAnimationFrame`.
-- State: magnet `{φ, ω}`, `stuck[]` (magnet-local coords + mass), free `orbs[]`, `health`, `score`, wave timers/modifier.
+- State: magnet `{φ, ω}`, `stuck[]` (magnet-local coords + mass), free `orbs[]`, `health`, `score`, wave timers/modifier. Highest wave is persisted in `localStorage` (`magnetar-last-wave`).
 - FFB sent at ~60 Hz, throttled.
 - Performance target: 60 fps on integrated graphics; O(orbs × 2 poles) per step.
 

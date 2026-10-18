@@ -271,6 +271,8 @@
         <p class="help-text">Unstable power orbs have a lime/white ring: they heal more and detonate harder.</p>
         <div class="section">Overload &amp; waves</div>
         <p class="help-text">Caught orbs add mass. Spinning fast sheds them, but sustained speed builds a red overload: the core drains and pole contact detonates. Waves change the orb mix and announce themselves with a banner; surviving a wave awards bonus score.</p>
+        <div class="section">Progress</div>
+        <p class="help-text">Your highest wave is saved. Start / Retry resumes there; New run begins from wave 1.</p>
         <div class="section">Settings</div>
         <p class="help-text">Use Settings to adjust touch sensitivity, audio and — when supported — wheel FFB and rotation range. Opening Help or Settings pauses play.</p>
       </div>
@@ -281,12 +283,13 @@
         <h2>Magnetar</h2>
         <p>The core is collapsing. You are the last magnet in its orbit — turn to catch iron orbs, let green power fall through, and keep the event horizon from swallowing what's left.</p>
         <div class="overlay-buttons">
-          <button>Start</button>
+          <button id="startButton">Start</button>
+          <button id="newRunButton" class="ghost hidden">New run</button>
           <button id="helpFromStart" class="ghost">Help</button>
         </div>
       </div>
     </div>
 
-    <script type="module" src="game.js?v=20261018ap"></script>
+    <script type="module" src="game.js?v=20261018as"></script>
   </body>
 </html>
