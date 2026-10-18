@@ -1,5 +1,5 @@
-import { SteeringInput } from './input.js?v=20261018q';
-import { AudioEngine } from './audio.js?v=20261018q';
+import { SteeringInput } from './input.js?v=20261018x';
+import { AudioEngine } from './audio.js?v=20261018x';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -46,11 +46,11 @@ window.addEventListener('resize', resize);
 const BAR_HALF = 85;
 const POLE_R = 22;             // surface-contact catch radius
 const POLE_BODY_R = 10;        // physical pole radius (orb-like)
-const BOUNCE = 0.75;
+const BOUNCE = 0.85;
 const ATTRACT_R = 150;
 const POLE_INNER_REACH = BAR_HALF - POLE_R; // pole pull fades to zero inside this radius
 const PULL = 550;
-const REPEL = 0.6;             // opposite pole push
+const REPEL = 0.75;            // opposite pole push
 const REPEL_RANGE = ATTRACT_R * 1.2;
 const K_TORQUE = 170;
 const D_TORQUE = 17;
@@ -65,6 +65,17 @@ const ORB_DRAG = 1.1;          // linear drag on free orbs (1/s)
 const MAX_ORB_SPEED = 340;
 const FFB_DEADZONE = 0.05;
 const EDGE_GLOW_OFFSET = 16;    // glow centre sits this far outside the screen edge
+
+// overload / hard contacts
+const OVERSPEED_LOAD_THRESHOLD = 550; // pole-tip speed (px/s) that builds overload
+const OVERLOAD_RISE_TIME = 3.5;       // seconds of sustained over-speed to overload
+const OVERLOAD_DECAY_TIME = 1.5;      // seconds to bleed off when slowed (faster than rise)
+const OVERLOAD_SPIN_DAMP = 0.5;       // spin multiplier after a hard impact
+const OVERLOAD_DRAIN = 5;             // core health lost per second at full overload
+const OVERSPEED_VOLATILE_DAMAGE = 12; // base core damage, scaled by over-speed
+const OVERSPEED_REGULAR_DAMAGE = 8;
+const HARD_IMPACT_R = 55;
+const HARD_IMPACT_FORCE = 320;
 
 // polarity / absorption
 const POLARITY = true;
@@ -101,6 +112,7 @@ let streak = 0;
 let difficulty = 0, spawnTimer = 1.0, spawnEvery = 1.6;
 let running = false, over = false, paused = false;
 let shedCooldown = 0;
+let spinLoad = 0;
 let jolt = 0, joltDir = 0, joltForce = 0;
 let audioAccum = 0;
 
@@ -149,7 +161,7 @@ function reset() {
   stuck = []; orbs = []; explosions = []; particles = []; streams = []; streamTimer = 0;
   health = 100; score = 0; caught = 0; exploded = 0; streak = 0;
   difficulty = 0; spawnTimer = 0.9; spawnEvery = 1.6;
-  running = true; over = false; shedCooldown = 0; jolt = 0; joltForce = 0;
+  running = true; over = false; shedCooldown = 0; spinLoad = 0; jolt = 0; joltForce = 0;
   input.reset();
   audio.init();
   audio.setMusicIntensity(0.2);
@@ -182,6 +194,7 @@ function gameOver() {
   overlay.querySelector('p').textContent = 'Score: ' + score + ' · caught ' + caught + ' · unstable ' + exploded + '.';
   overlay.classList.remove('hidden');
   overlay.querySelector('button').textContent = 'Restart';
+  syncHud();
 }
 
 function poleWorld(sign) {
@@ -263,7 +276,44 @@ function powerBurst(x, y, pol) {
   magnet.omega += (x >= CX ? 1 : -1) * EXPLOSION_TORQUE;
 }
 
+function hardCatch(orb) {
+  const poleSpeed = Math.abs(magnet.omega) * BAR_HALF;
+  const over = clamp((poleSpeed - OVERSPEED_LOAD_THRESHOLD) / 350, 0, 1);
+  streak = 0;
+  jolt = 0.12;
+  joltDir = Math.sign(orb.x - CX) || 1;
+  joltForce = 0.9;
+
+  if (orb.volatile) {
+    explode(orb.x, orb.y, false);
+    health -= OVERSPEED_VOLATILE_DAMAGE * (1 + over);
+  } else {
+    hardImpact(orb);
+    health -= OVERSPEED_REGULAR_DAMAGE * (1 + over);
+  }
+  audio.damage(panOf(orb.x));
+  magnet.omega *= OVERLOAD_SPIN_DAMP;
+  spinLoad *= 0.5;
+}
+
+function hardImpact(orb) {
+  for (const o of orbs) {
+    if (o === orb) continue;
+    const dx = o.x - orb.x, dy = o.y - orb.y;
+    const d = Math.hypot(dx, dy);
+    if (d < HARD_IMPACT_R && d > 0.001) {
+      const f = HARD_IMPACT_FORCE * (1 - d / HARD_IMPACT_R);
+      o.vx += (dx / d) * f;
+      o.vy += (dy / d) * f;
+    }
+  }
+  explosions.push({ x: orb.x, y: orb.y, life: 0.25, max: 0.25, scale: 0.55 });
+  spawnParticles(orb.x, orb.y, '#fff2d0', 10, 420, 0.8);
+  spawnParticles(orb.x, orb.y, ORB_COLORS[orb.pol], 12, 360, 1);
+}
+
 function catchOrb(orb) {
+  if (spinLoad >= 1) { hardCatch(orb); return; }
   if (orb.volatile) { powerBurst(orb.x, orb.y, orb.pol); return; }
   if (stuck.length >= MAX_STUCK) shedOne(0, true);
   const energy = orb.energy !== undefined ? orb.energy : 1;
@@ -348,6 +398,17 @@ function step(dt) {
   const torque = K_TORQUE * (target - magnet.phi) - D_TORQUE * magnet.omega;
   magnet.omega += (torque / I) * dt;
   magnet.phi += magnet.omega * dt;
+
+  const poleSpeed = Math.abs(magnet.omega) * BAR_HALF;
+  if (poleSpeed > OVERSPEED_LOAD_THRESHOLD) {
+    spinLoad = Math.min(1, spinLoad + dt / OVERLOAD_RISE_TIME);
+  } else {
+    spinLoad = Math.max(0, spinLoad - dt / OVERLOAD_DECAY_TIME);
+  }
+  if (spinLoad >= 1) {
+    health -= OVERLOAD_DRAIN * dt;
+    if (health <= 0) { health = 0; gameOver(); return; }
+  }
 
   // stuck orbs are slowly absorbed: shrink, feed particles to the core, heal
   for (let i = stuck.length - 1; i >= 0; i--) {
@@ -438,7 +499,24 @@ function step(dt) {
         break;
       }
     }
-    if (didCatch) continue;
+    if (didCatch) {
+      if (health <= 0) { gameOver(); return; }
+      continue;
+    }
+
+    if (spinLoad >= 1) {
+      let contact = false;
+      for (const { p } of ps) {
+        if (Math.hypot(o.x - p.x, o.y - p.y) < POLE_BODY_R + o.r) { contact = true; break; }
+      }
+      if (contact) {
+        hardCatch(o);
+        orbs.splice(i, 1);
+        if (health <= 0) { gameOver(); return; }
+        continue;
+      }
+    }
+
     if (collidePoles(o)) continue;
 
     if (Math.hypot(o.x - CX, o.y - CY) < CORE_R + o.r) {
@@ -705,6 +783,33 @@ function drawEdgeGlow(hit, o, t, approach) {
   drawGlow(hit.x, hit.y, volatile ? 28 : 24, color, Math.min(1, alpha * 1.2));
 }
 
+function drawOverloadEdges(t) {
+  if (spinLoad <= 0.03) return;
+  const pulse = spinLoad >= 1 ? 0.82 + 0.18 * Math.sin(t * 8) : 1;
+  const alpha = spinLoad * 0.58 * pulse;
+  const band = Math.min(W, H) * 0.2;
+  const stops = (g) => {
+    g.addColorStop(0, `rgba(255, 30, 45, ${alpha})`);
+    g.addColorStop(0.45, `rgba(255, 30, 45, ${alpha * 0.55})`);
+    g.addColorStop(1, 'rgba(255, 30, 45, 0)');
+    return g;
+  };
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+
+  ctx.fillStyle = stops(ctx.createLinearGradient(0, 0, band, 0));
+  ctx.fillRect(0, 0, band, H);
+  ctx.fillStyle = stops(ctx.createLinearGradient(W, 0, W - band, 0));
+  ctx.fillRect(W - band, 0, band, H);
+  ctx.fillStyle = stops(ctx.createLinearGradient(0, 0, 0, band));
+  ctx.fillRect(0, 0, W, band);
+  ctx.fillStyle = stops(ctx.createLinearGradient(0, H, 0, H - band));
+  ctx.fillRect(0, H - band, W, band);
+
+  ctx.restore();
+}
+
 function render() {
   ctx.fillStyle = '#05060a';
   ctx.fillRect(0, 0, W, H);
@@ -767,6 +872,16 @@ function render() {
     ctx.fillStyle = col; ctx.fill();
   }
 
+  // overload warning glow
+  if (spinLoad > 0.03) {
+    const hot = spinLoad >= 1;
+    const warn = 0.5 + 0.5 * Math.sin(t * (hot ? 12 : 7));
+    for (const p of [p1, p2]) {
+      drawGlow(p.x, p.y, 58 + 12 * spinLoad, '#ff2a36', (0.24 + 0.45 * spinLoad) * (0.6 + 0.4 * warn));
+      drawGlow(p.x, p.y, 32 + 8 * spinLoad, '#ff5a5f', (0.16 + 0.36 * spinLoad) * (0.6 + 0.4 * warn));
+    }
+  }
+
   // stuck orbs
   const c = Math.cos(magnet.phi), s = Math.sin(magnet.phi);
   for (const o of stuck) {
@@ -804,6 +919,8 @@ function render() {
     ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, TAU); ctx.fill();
     ctx.globalAlpha = 1;
   }
+
+  drawOverloadEdges(t);
 }
 
 document.getElementById('connectButton').addEventListener('click', async () => {

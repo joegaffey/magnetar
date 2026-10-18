@@ -4,14 +4,14 @@
 
 A one-axis survival game about catching iron orbs on a rotating magnet while they spiral into a black hole.
 
-Every orb that sticks adds mass — the magnet lags and becomes harder to control. Left alone, stuck orbs are slowly absorbed into the black hole, feeding it and restoring its strength. Spinning fast can naturally shake orbs loose before they are absorbed — that is a physical consequence of rotation, not a goal in itself.
+Every orb that sticks adds mass — the magnet lags and becomes harder to control. Left alone, stuck orbs are slowly absorbed into the black hole, feeding it and restoring its strength. Spinning fast can naturally shake orbs loose, but sustained speed overloads the poles — when they glow red, any contact detonates.
 
 ## Play
 
 - **Rotate the magnet** with `←/→` (or `A/D`), move the mouse, or drag on a touchscreen (relative drag; sensitivity in Settings).
 - Present the **matching pole** (amber ↔ amber, blue ↔ blue) to catch an orb; the opposite pole repels it.
 - Let caught orbs **be absorbed** to restore the core.
-- **Spinning fast naturally detaches orbs** — they keep their polarity and can be re-caught, and a detached orb reaching the core damages by its remaining energy. Shedding is not a goal, just a consequence.
+- **Spinning fast naturally detaches orbs** — they keep their polarity and can be re-caught, and a detached orb reaching the core damages by its remaining energy. Sustained high speed overloads the poles; while they glow red, any contact detonates. Shedding is a consequence, not a goal.
 - Keep orbs from reaching the core.
 
 ## Mechanics
@@ -23,7 +23,8 @@ Every orb that sticks adds mass — the magnet lags and becomes harder to contro
 - **Edge warning:** off-screen orbs cast a soft localized glow just outside the screen edge where they will enter, fading in gradually from spawn and reaching full brightness before they enter; unstable orbs pulse red.
 - **Weight:** each stuck orb adds angular inertia (HUD `Mass`), making the magnet sluggish and overshooty.
 - **Absorb:** stuck orbs slowly shrink and feed the core, restoring `Health` and removing their mass.
-- **Unstable orbs:** some detonate at the core for 3× damage (with a blast that shoves nearby orbs and kicks the magnet), but if you catch one it bursts **instantly** for a 3× heal — high risk, high reward.
+- **Overload:** sustained fast rotation makes the poles and screen edges glow red, and drains core energy. While overloaded, any contact with a pole detonates — unstable orbs for heavy core damage, regular orbs for a smaller hard-impact burst — and each detonation kills spin.
+- **Unstable orbs:** some detonate at the core for 3× damage (with a blast that shoves nearby orbs and kicks the magnet), but if caught calmly they burst for a 3× heal. Contacted while overloaded or on the core, they detonate for heavy damage.
 - **Escalation:** spawn rate and orb speed climb over time.
 
 ## Audio
@@ -58,6 +59,7 @@ Most feel lives in `game.js`:
 - Poles: `BAR_HALF`, `ATTRACT_R`, `POLE_INNER_REACH`, `POLE_R`, `PULL`, `REPEL`, `REPEL_RANGE`.
 - Absorption: `ABSORB_TIME`, `HEAL_PER_ORB`.
 - Shedding: `SHED_ACCEL`, `SHED_INTERVAL`, `MAX_STUCK`.
+- Overload: `OVERSPEED_LOAD_THRESHOLD`, `OVERLOAD_RISE_TIME`, `OVERLOAD_DECAY_TIME`, `OVERLOAD_SPIN_DAMP`, `OVERLOAD_DRAIN`, `OVERSPEED_*_DAMAGE`.
 - Volatile orbs: `VOLATILE_CHANCE`, `EXPLOSION_*`.
 
 See [`SPEC.md`](./SPEC.md) for the full design notes and parameter table.

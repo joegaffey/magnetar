@@ -70,7 +70,7 @@ I = I0 + Σ m_orb
 
 ### 5.4 Shedding (buttonless detach)
 Shedding is an **emergent physical response** to fast rotation, not an intended player objective or scoring route.
-Primary: **centrifugal (gradual)** — an orb detaches when `ω²·r > SHED_ACCEL` **and the pole is moving away from it** at that speed (outermost first), at most one per `SHED_INTERVAL`; released tangentially with a modest outward bias. A detached orb has a short no-catch window (0.25 s) so it cannot instantly reattach. Spinning no longer clears everything instantly.
+Primary: **centrifugal (gradual)** — an orb detaches when `ω²·r > SHED_ACCEL` **and the pole is moving away from it** at that speed (outermost first), at most one per `SHED_INTERVAL`; released tangentially with a modest outward bias. A detached orb has a short no-catch window (0.25 s) so it cannot instantly reattach.
 Secondary: **hard capacity** — if `stuck ≥ MAX_STUCK`, the oldest orb is ejected automatically (prevents a dead-end).
 A detached orb becomes an ordinary free orb again: it keeps its polarity colour and can be re-caught. Its remaining energy (`size / ORB_SIZE`) scales its radius and the core damage it deals.
 
@@ -100,12 +100,21 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 - More absorbing orbs = denser pole→centre flow (and a safer but lighter magnet).
 
 ### 5.10 Unstable orbs & explosions (in build)
-- Some orbs are **unstable** (red ring). Catching one triggers an **instant burst** that transmits power immediately (heals `HEAL_PER_ORB × 3`) — it does **not** stick or absorb gradually.
+- Some orbs are **unstable** (red ring). Catching one calmly triggers an **instant burst** that transmits power immediately (heals `HEAL_PER_ORB × 3`) — it does **not** stick or absorb gradually.
 - An explosion applies a radial impulse to nearby orbs, an **angular kick to the magnet**, and damages the core if close.
 - An unstable orb reaching the **centre** detonates in a **larger explosion** (1.8× radius/force/particles) and deals **3× core damage** (24) plus the blast damage.
-- Goal: make unstable orbs high-risk / high-reward — grab them for a big heal, but never let one reach the core.
+- Contact with an **overloaded** pole detonates an unstable orb instead: no heal/score, heavy core damage, and a spin-breaking impact.
+- Goal: make unstable orbs high-risk / high-reward — grab them calmly for a big heal, but never let one reach the core or hit it at speed.
 
-### 5.11 Future mechanics (candidate)
+### 5.11 Overload & hard catches (in build)
+- Sustained high pole-tip speed (`|ω| × BAR_HALF > OVERSPEED_LOAD_THRESHOLD`) builds `spinLoad` over `OVERLOAD_RISE_TIME`; it decays over `OVERLOAD_DECAY_TIME` when slower (faster than it builds).
+- At full load, the poles and screen edges glow red and the core loses `OVERLOAD_DRAIN` health per second. Any **contact** with a pole while overloaded is a hard contact: no stick/score, streak reset, and core damage.
+- Unstable hard contact: full explosion, `OVERSPEED_VOLATILE_DAMAGE × (1 + overspeed)` core damage.
+- Regular hard contact: small hard-impact burst, `OVERSPEED_REGULAR_DAMAGE × (1 + overspeed)` core damage, no `unstable` count.
+- Every hard contact damps spin (`OVERLOAD_SPIN_DAMP`) and halves `spinLoad`, breaking sustained sweeps.
+- This makes quick fast spins viable for shedding, but sustained speed dangerous.
+
+### 5.12 Future mechanics (candidate)
 - Orb types: heavy, fast, shielded (needs 2 hits).
 - Polarity toggle (only if a button verb is added).
 - Combo/multipliers for chain explosions.
@@ -142,6 +151,7 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 - **Orbs:** glowing circles; volatile orbs get a red ring.
 - **Incoming edge glow:** an orb still outside the viewport casts a soft colored glow from a marker just outside the screen edge (`EDGE_GLOW_OFFSET`), so it reads as an off-screen light source rather than an orb materialising at the edge. It fades in gradually from spawn and reaches full brightness as it reaches the marker (red and faster-pulsing for unstable orbs).
 - **Stuck orbs:** clustered on the pole with a glow; gentle pulse.
+- **Overload:** as spin load builds, a pulsing red glow builds around both poles and a soft red glow grows inward from all four screen edges; at full overload both pulse clearly. Hard contacts add a small orange shock ring (regular) or a full unstable blast (volatile).
 - **Catch:** particle burst at the contact point (reads as a real hit).
 - **Shed:** particle burst at release; shed orbs keep their polarity colour.
 - **Explosion:** expanding ring + large particle burst (additive), angular kick to the magnet.
@@ -170,11 +180,11 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 | `BAR_HALF` | 85 | pole distance from centre (px) |
 | `POLE_R` | 22 | surface-contact catch radius (orbs visibly touch) |
 | `POLE_BODY_R` | 10 | physical pole-orb radius (orbs bounce off) |
-| `BOUNCE` | 0.75 | restitution when an orb hits a pole |
+| `BOUNCE` | 0.85 | restitution when an orb hits a pole |
 | `ATTRACT_R` | 150 | attraction range |
 | `POLE_INNER_REACH` | 63 (`BAR_HALF − POLE_R`) | matching-pole pull starts fading here; zero inside, full at `BAR_HALF` |
 | `PULL` | 550 | attraction accel at the pole |
-| `REPEL` | 0.6 | opposite-pole push (fraction of pull) |
+| `REPEL` | 0.75 | opposite-pole push (fraction of pull) |
 | `REPEL_RANGE` | 1.2× `ATTRACT_R` | wrong pole acts from slightly further away |
 | `K_TORQUE` / `D_TORQUE` | 170 / 17 | magnet spring / damping |
 | `BASE_I` | 1.0 | base inertia |
@@ -182,6 +192,13 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 | `MAX_STUCK` | 14 | hard capacity |
 | `SHED_ACCEL` | 5200 | centrifugal detach threshold (`ω²·r`) |
 | `SHED_INTERVAL` | 0.12 s | min time between shed orbs |
+| `OVERSPEED_LOAD_THRESHOLD` | 550 px/s | pole-tip speed that builds overload |
+| `OVERLOAD_RISE_TIME` | 3.5 s | sustained over-speed needed to overload |
+| `OVERLOAD_DECAY_TIME` | 1.5 s | time to bleed off overload (faster than rise) |
+| `OVERLOAD_SPIN_DAMP` | 0.5 | spin multiplier after a hard catch |
+| `OVERLOAD_DRAIN` | 5 /s | core health lost while fully overloaded |
+| `OVERSPEED_VOLATILE_DAMAGE` | 12–24 | unstable hard-catch core damage |
+| `OVERSPEED_REGULAR_DAMAGE` | 8–16 | regular hard-catch core damage |
 | `CORE_R` | 20 | core radius |
 | `CORE_PULL` | 275 | core gravity-well acceleration on all free orbs |
 | `ORB_DRAG` | 1.1 /s | linear drag on free orbs (≈218 px/s terminal) |
@@ -210,7 +227,7 @@ Tuning goals: ~30–45 s to first "heavy" feel; fast spins naturally shed the ou
 ## 9. UX / onboarding
 
 - **Full-viewport canvas**; HUD and controls overlay on top (no letterboxing).
-- **Start gate:** a help overlay with controls and a **Start** button; tapping it begins play (no auto-start). The overlay scrolls and compacts on short/landscape screens. On failure the same overlay shows results + **Restart**.
+- **Start gate:** a help overlay with controls, the overload warning, and a **Start** button; tapping it begins play (no auto-start). The overlay scrolls and compacts on short/landscape screens. On failure the same overlay shows results + **Restart**.
 - HUD (top-left): neon color-coded `Health`, `Mass`, `Score`, `Input` (source + FFB), `FFB`; brand wordmark.
 - Top-right: **Connect wheel** (optional), **Settings**, **Restart** + status.
 - **Settings modal:** Controls (touch sensitivity), Audio (Mute, Master, Music) and Wheel (FFB strength, rotation range); opening it **pauses play** and stops FFB; close via ×, backdrop or Esc.
