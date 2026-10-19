@@ -44,7 +44,7 @@ Magnetar is built to be played with a real **force-feedback steering wheel**, wi
 
 Tested with the **CAMMUS C5** (3000° lock-to-lock, constant-force FFB, steering/buttons/axes). Also supported by the library: CAMMUS C12, Thrustmaster T248 / T300RS, Logitech Driving Force GT, FFBeast, and any standard-descriptor HID wheel (steering/axes/buttons). Force feedback requires constant-force support via a built-in profile or USB-PID.
 
-When WebHID is available, a **Connect wheel** button appears in the top bar. It is a regular secondary action by default and becomes highlighted when a previously authorized device is detected. Opening the browser picker pauses play until it closes. Pick your device — it becomes the steering axis, and its FFB reflects the magnet's mass and rotation (the heavier it gets, the heavier the wheel feels). After connecting, the button is replaced by the device name; use **Settings → Wheel / stick** to disconnect. Use **Settings** (pauses play) to adjust **touch sensitivity**, **FFB strength**, **rotation range** (match your wheel's lock-to-lock), **wheel sensitivity** (scales wheel rotation into game rotation), **Master/Music** volume and **mute**. Flight sticks exposing a usable HID axis may also work, though FFB support depends on the device. On browsers without WebHID the wheel/stick UI is hidden. Keyboard, mouse, touch and gamepad always work, so a wheel or stick is entirely optional.
+When WebHID is available, a **Connect wheel** button appears in the top bar. It is a regular secondary action by default and becomes highlighted when a previously authorized device is detected. Opening the browser picker pauses play until it closes. Pick your device — it becomes the steering axis, and its FFB reflects rotation and impacts, with detonations landing much harder than ordinary contacts. Caught mass still affects handling and response, but is decoupled from the constant-force feel until damper-style FFB is available. After connecting, the button is replaced by the device name; use **Settings → Wheel / stick** to disconnect. Use **Settings** (pauses play) to adjust **touch sensitivity**, **FFB strength**, **rotation range** (match your wheel's lock-to-lock), **wheel sensitivity** (scales wheel rotation into game rotation), **Master/Music** volume and **mute**. Flight sticks exposing a usable HID axis may also work, though FFB support depends on the device. On browsers without WebHID the wheel/stick UI is hidden. Keyboard, mouse, touch and gamepad always work, so a wheel or stick is entirely optional.
 
 ## Run
 
@@ -66,6 +66,7 @@ Magnetar is installable as a PWA. On supported mobile browsers, use **Install ap
 Most feel lives in `game.js`:
 
 - Magnet: `K_TORQUE`, `D_TORQUE`, `BASE_I`, `ORB_MASS`.
+- FFB: `FFB_SPIN_GAIN`, `FFB_WEIGHT_GAIN` (0 = mass-independent constant force), `FFB_DEADZONE`, jolt strengths/durations.
 - Orbs: `CORE_PULL`, `ORB_DRAG`, `MAX_ORB_SPEED`, spawn rate/speed.
 - Poles: `BAR_HALF`, `ATTRACT_R`, `POLE_INNER_REACH`, `POLE_R`, `PULL`, `REPEL`, `REPEL_RANGE`.
 - Absorption: `ABSORB_TIME`, `HEAL_PER_ORB`.

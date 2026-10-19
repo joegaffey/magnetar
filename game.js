@@ -1,5 +1,5 @@
-import { SteeringInput } from './input.js?v=20261019b';
-import { AudioEngine } from './audio.js?v=20261019b';
+import { SteeringInput } from './input.js?v=20261019c';
+import { AudioEngine } from './audio.js?v=20261019c';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -62,9 +62,9 @@ const BAR_HALF = 85;
 const POLE_R = 22;             // surface-contact catch radius
 const POLE_BODY_R = 10;        // physical pole radius (orb-like)
 const BOUNCE = 0.85;
-const ATTRACT_R = 150;
+const ATTRACT_R = 180;
 const POLE_INNER_REACH = BAR_HALF - POLE_R; // pole pull fades to zero inside this radius
-const PULL = 550;
+const PULL = 900;
 const REPEL = 0.75;            // opposite pole push
 const REPEL_RANGE = ATTRACT_R * 1.2;
 const K_TORQUE = 170;
@@ -79,6 +79,8 @@ const CORE_PULL = 275;         // acceleration of free orbs toward the core (all
 const ORB_DRAG = 1.1;          // linear drag on free orbs (1/s)
 const MAX_ORB_SPEED = 340;
 const FFB_DEADZONE = 0.05;
+const FFB_SPIN_GAIN = 0.06;
+const FFB_WEIGHT_GAIN = 0;      // mass → constant-force weight (0 until damper FFB lands)
 const EDGE_GLOW_OFFSET = 16;    // glow centre sits this far outside the screen edge
 
 // overload / hard contacts
@@ -173,6 +175,13 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const TAU = Math.PI * 2;
 const rand = (a, b) => a + Math.random() * (b - a);
 const panOf = (x) => clamp((x - CX) / (W / 2), -1, 1) * 0.8;
+
+function ffbJolt(force, duration, dir) {
+  if (jolt > 0 && Math.abs(force) < Math.abs(joltForce)) return;
+  jolt = duration;
+  joltDir = dir >= 0 ? 1 : -1;
+  joltForce = force;
+}
 
 // pre-rendered glow sprites (cheap neon bloom)
 const glowCache = new Map();
@@ -414,6 +423,7 @@ function explode(x, y, big = false) {
     }
   }
   magnet.omega += (x >= CX ? 1 : -1) * EXPLOSION_TORQUE * scale;
+  ffbJolt(big ? 1.7 : 1.15, big ? 0.3 : 0.18, Math.sign(x - CX) || 1);
   if (Math.hypot(x - CX, y - CY) < R * 0.6) health -= EXPLOSION_DAMAGE;
   exploded++;
 }
@@ -469,18 +479,14 @@ function powerDetonate(orb) {
   }
 
   magnet.omega += (x >= CX ? 1 : -1) * EXPLOSION_TORQUE * (big ? 1.2 : 0.6);
-  jolt = 0.12;
-  joltDir = Math.sign(x - CX) || 1;
-  joltForce = 0.9;
+  ffbJolt(big ? 1.8 : 1.25, big ? 0.32 : 0.22, Math.sign(x - CX) || 1);
 }
 
 function hardCatch(orb) {
   const poleSpeed = Math.abs(magnet.omega) * BAR_HALF;
   const over = clamp((poleSpeed - OVERSPEED_LOAD_THRESHOLD) / 350, 0, 1);
   streak = 0;
-  jolt = 0.12;
-  joltDir = Math.sign(orb.x - CX) || 1;
-  joltForce = 0.9;
+  ffbJolt(1.05, 0.18, Math.sign(orb.x - CX) || 1);
 
   if (orb.volatile) {
     explode(orb.x, orb.y, false);
@@ -524,9 +530,7 @@ function catchOrb(orb) {
   audio.score(panOf(orb.x), streak);
   spawnParticles(orb.x, orb.y, ORB_COLORS[orb.pol], 12, 220);
   audio.catch(panOf(orb.x));
-  jolt = 0.09;
-  joltDir = Math.sign(orb.x - CX) || 1;
-  joltForce = 0.8;
+  ffbJolt(0.25, 0.06, Math.sign(orb.x - CX) || 1);
 }
 
 function collidePoles(o) {
@@ -547,9 +551,7 @@ function collidePoles(o) {
       o.vx -= (1 + BOUNCE) * vn * nx;
       o.vy -= (1 + BOUNCE) * vn * ny;
       const impact = -vn;
-      jolt = Math.min(0.12, 0.03 + impact / 1400);
-      joltDir = Math.sign(nx) || 1;
-      joltForce = clamp(0.25 + impact / 1200, 0.25, 0.7);
+      ffbJolt(clamp(0.08 + impact / 2200, 0.08, 0.3), 0.06, Math.sign(nx) || 1);
       spawnParticles(p.x + nx * POLE_BODY_R, p.y + ny * POLE_BODY_R, '#cfe0ff', 6, 160);
       audio.thunk(panOf(p.x), clamp(impact / 300, 0.3, 1.2));
       audio.hit(panOf(p.x), clamp(impact / 400, 0.4, 1));
@@ -854,7 +856,8 @@ function updateFfb(dt) {
   ffbAccum = 0;
   if (!running) { ffbEl.textContent = 'idle'; return; }
 
-  let force = clamp(-magnet.omega * inertia() * 0.06, -1, 1);
+  const spinMass = BASE_I + FFB_WEIGHT_GAIN * (inertia() - BASE_I);
+  let force = clamp(-magnet.omega * spinMass * FFB_SPIN_GAIN, -1, 1);
   if (jolt > 0) { jolt -= dt; force = joltDir * joltForce; }
   if (Math.abs(force) < FFB_DEADZONE) force = 0;
   ffbEl.textContent = force.toFixed(2);

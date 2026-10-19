@@ -66,7 +66,7 @@ I = I0 + Σ m_orb
 
 ### 5.3 Mass / weight
 - Each caught orb adds `ORB_MASS` to `I`.
-- Effects: slower magnet response, more overshoot, heavier wheel (FFB), harder to spin.
+- Effects: slower magnet response, more overshoot, harder to spin. Constant-force weight is decoupled (`FFB_WEIGHT_GAIN = 0`) until damper-style FFB is available.
 - Displayed as `Mass` in the HUD.
 
 ### 5.4 Shedding (buttonless detach)
@@ -147,8 +147,8 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 
 - Active only when the wheel is the input source.
 - Constant force, default strength **25%**.
-- Mapping: resistance proportional to `I·ω` (mass × spin), so the wheel feels heavier as mass grows and as you spin faster.
-- **Jolt** on catch (short pulse) and on core hit (stronger).
+- Mapping: resistance proportional to spin (`ω`) via `FFB_SPIN_GAIN`; mass is decoupled (`FFB_WEIGHT_GAIN = 0`) until damper-style FFB is available.
+- **Jolts** are ranked: ordinary catches/bounces are light and short; pole detonations and explosions are much stronger and longer. A weaker jolt never overrides an active stronger one.
 - Deadzone so a still magnet produces no force.
 - Auto-stop on game over/pause; explicit **Stop** available (dev build).
 
@@ -209,9 +209,9 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 | `POLE_R` | 22 | surface-contact catch radius (orbs visibly touch) |
 | `POLE_BODY_R` | 10 | physical pole-orb radius (orbs bounce off) |
 | `BOUNCE` | 0.85 | restitution when an orb hits a pole |
-| `ATTRACT_R` | 150 | attraction range |
+| `ATTRACT_R` | 180 | attraction range |
 | `POLE_INNER_REACH` | 63 (`BAR_HALF − POLE_R`) | matching-pole pull starts fading here; zero inside, full at `BAR_HALF` |
-| `PULL` | 550 | attraction accel at the pole |
+| `PULL` | 900 | attraction accel at the pole |
 | `REPEL` | 0.75 | opposite-pole push (fraction of pull) |
 | `REPEL_RANGE` | 1.2× `ATTRACT_R` | wrong pole acts from slightly further away |
 | `K_TORQUE` / `D_TORQUE` | 170 / 17 | magnet spring / damping |
@@ -243,6 +243,9 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 | `CORE_PULL` | 275 | core gravity-well acceleration on all free orbs |
 | `ORB_DRAG` | 1.1 /s | linear drag on free orbs (≈218 px/s terminal) |
 | `MAX_ORB_SPEED` | 340 px/s | free-orb speed cap |
+| `FFB_SPIN_GAIN` | 0.06 | spin → constant-force scale |
+| `FFB_WEIGHT_GAIN` | 0 | mass → constant-force coupling (off until damper FFB) |
+| `FFB_DEADZONE` | 0.05 | force below this is zeroed |
 | Core health | 100 | durability |
 | Core damage | 8 × energy | normal orb; an unstable orb hit deals 24 + blast |
 | Spawn | `max(0.45, 1.6 − runTime·0.0055) × modifier` | gradual active-time interval |
