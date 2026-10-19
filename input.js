@@ -1,4 +1,4 @@
-import { WebHIDWheel } from './vendor/webhid-wheel.js';
+import { WebHIDWheel } from './vendor/webhid-wheel.js?v=20261019au';
 
 /**
  * Unified one-axis steering input.
@@ -147,7 +147,8 @@ export class SteeringInput {
   async connectWheel(opts = {}) {
     this.wheel = new WebHIDWheel({
       maxRotation: opts.maxRotation !== undefined ? opts.maxRotation : 900,
-      ffbStrength: opts.ffbStrength !== undefined ? opts.ffbStrength : 0.25
+      ffbStrength: opts.ffbStrength !== undefined ? opts.ffbStrength : 0.25,
+      ffbInvert: opts.ffbInvert !== undefined ? opts.ffbInvert : false
     });
     const dev = await this.wheel.connect();
     if (dev) {
@@ -164,6 +165,10 @@ export class SteeringInput {
 
   setMaxRotation(value) {
     if (this.wheel) this.wheel.maxRotation = value;
+  }
+
+  setFfbInvert(value) {
+    if (this.wheel) this.wheel.ffbInvert = !!value;
   }
 
   get ffbActive() {

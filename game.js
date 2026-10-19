@@ -1,5 +1,5 @@
-import { SteeringInput } from './input.js?v=20261018au';
-import { AudioEngine } from './audio.js?v=20261018au';
+import { SteeringInput } from './input.js?v=20261019au';
+import { AudioEngine } from './audio.js?v=20261019au';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -19,6 +19,7 @@ const disconnectButton = document.getElementById('disconnectButton');
 const webHidSupported = !!(navigator.hid && navigator.hid.requestDevice);
 const ffbStrengthInput = document.getElementById('ffbStrength');
 const ffbStrengthVal = document.getElementById('ffbStrengthVal');
+const ffbInvertInput = document.getElementById('ffbInvert');
 const wheelRangeInput = document.getElementById('wheelRange');
 const wheelRangeVal = document.getElementById('wheelRangeVal');
 const muteToggle = document.getElementById('muteToggle');
@@ -1283,6 +1284,7 @@ connectButton.addEventListener('click', async () => {
   try {
     const dev = await input.connectWheel({
       ffbStrength: parseInt(ffbStrengthInput.value) / 100,
+      ffbInvert: ffbInvertInput.checked,
       maxRotation: parseInt(wheelRangeInput.value)
     });
     if (!dev) { statusEl.textContent = 'Connection cancelled'; return; }
@@ -1385,6 +1387,9 @@ document.addEventListener('keydown', (e) => {
 ffbStrengthInput.addEventListener('input', () => {
   ffbStrengthVal.textContent = ffbStrengthInput.value + '%';
   input.setFfbStrength(parseInt(ffbStrengthInput.value) / 100);
+});
+ffbInvertInput.addEventListener('change', () => {
+  input.setFfbInvert(ffbInvertInput.checked);
 });
 wheelRangeInput.addEventListener('input', () => {
   wheelRangeVal.textContent = wheelRangeInput.value + '\u00b0';
