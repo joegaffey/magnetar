@@ -1,5 +1,5 @@
-import { SteeringInput } from './input.js?v=20261019c';
-import { AudioEngine } from './audio.js?v=20261019c';
+import { SteeringInput } from './input.js?v=20261019d';
+import { AudioEngine } from './audio.js?v=20261019d';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -62,9 +62,9 @@ const BAR_HALF = 85;
 const POLE_R = 22;             // surface-contact catch radius
 const POLE_BODY_R = 10;        // physical pole radius (orb-like)
 const BOUNCE = 0.85;
-const ATTRACT_R = 180;
+const ATTRACT_R = 150;
 const POLE_INNER_REACH = BAR_HALF - POLE_R; // pole pull fades to zero inside this radius
-const PULL = 900;
+const PULL = 550;
 const REPEL = 0.75;            // opposite pole push
 const REPEL_RANGE = ATTRACT_R * 1.2;
 const K_TORQUE = 170;

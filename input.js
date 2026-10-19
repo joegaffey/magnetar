@@ -1,4 +1,4 @@
-import { WebHIDWheel } from './vendor/webhid-wheel.js?v=20261019c';
+import { WebHIDWheel } from './vendor/webhid-wheel.js?v=20261019d';
 
 /**
  * Unified one-axis steering input.

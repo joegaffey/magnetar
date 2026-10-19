@@ -209,9 +209,9 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 | `POLE_R` | 22 | surface-contact catch radius (orbs visibly touch) |
 | `POLE_BODY_R` | 10 | physical pole-orb radius (orbs bounce off) |
 | `BOUNCE` | 0.85 | restitution when an orb hits a pole |
-| `ATTRACT_R` | 180 | attraction range |
+| `ATTRACT_R` | 150 | attraction range |
 | `POLE_INNER_REACH` | 63 (`BAR_HALF − POLE_R`) | matching-pole pull starts fading here; zero inside, full at `BAR_HALF` |
-| `PULL` | 900 | attraction accel at the pole |
+| `PULL` | 550 | attraction accel at the pole |
 | `REPEL` | 0.75 | opposite-pole push (fraction of pull) |
 | `REPEL_RANGE` | 1.2× `ATTRACT_R` | wrong pole acts from slightly further away |
 | `K_TORQUE` / `D_TORQUE` | 170 / 17 | magnet spring / damping |
