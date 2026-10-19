@@ -148,7 +148,8 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 - Active only when the wheel is the input source.
 - Constant force, default strength **25%**.
 - Mapping: resistance proportional to spin (`ω`) via `FFB_SPIN_GAIN`; mass is decoupled (`FFB_WEIGHT_GAIN = 0`) until damper-style FFB is available.
-- **Jolts** are ranked: ordinary catches/bounces are light and short; pole detonations and explosions are much stronger and longer. A weaker jolt never overrides an active stronger one.
+- **Magnetic pull:** the net reaction torque from orbs inside `ATTRACT_R` is smoothed and applied as a capped constant-force bias (`FFB_PULL_GAIN`, `FFB_PULL_MAX`), tugging the wheel toward the strongest nearby attraction without auto-steering.
+- **Jolts** are ranked: ordinary catches/bounces are light and short; core absorption is mid; explosions are stronger; a power-orb detonation on a pole is strongest. A weaker jolt never overrides an active stronger one.
 - Deadzone so a still magnet produces no force.
 - Auto-stop on game over/pause; explicit **Stop** available (dev build).
 
@@ -245,6 +246,8 @@ A detached orb becomes an ordinary free orb again: it keeps its polarity colour 
 | `MAX_ORB_SPEED` | 340 px/s | free-orb speed cap |
 | `FFB_SPIN_GAIN` | 0.06 | spin → constant-force scale |
 | `FFB_WEIGHT_GAIN` | 0 | mass → constant-force coupling (off until damper FFB) |
+| `FFB_PULL_GAIN` / `FFB_PULL_MAX` | 0.6 / 0.3 | magnetic torque → constant-force cue and cap |
+| `FFB_PULL_SMOOTH` | 10 /s | pull response smoothing |
 | `FFB_DEADZONE` | 0.05 | force below this is zeroed |
 | Core health | 100 | durability |
 | Core damage | 8 × energy | normal orb; an unstable orb hit deals 24 + blast |

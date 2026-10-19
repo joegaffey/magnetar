@@ -1,5 +1,5 @@
-import { SteeringInput } from './input.js?v=20261019d';
-import { AudioEngine } from './audio.js?v=20261019d';
+import { SteeringInput } from './input.js?v=20261019e';
+import { AudioEngine } from './audio.js?v=20261019e';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -81,6 +81,9 @@ const MAX_ORB_SPEED = 340;
 const FFB_DEADZONE = 0.05;
 const FFB_SPIN_GAIN = 0.06;
 const FFB_WEIGHT_GAIN = 0;      // mass → constant-force weight (0 until damper FFB lands)
+const FFB_PULL_GAIN = 0.6;      // normalized magnetic torque → constant force
+const FFB_PULL_MAX = 0.3;       // cue, not autopilot
+const FFB_PULL_SMOOTH = 10;     // response rate (1/s)
 const EDGE_GLOW_OFFSET = 16;    // glow centre sits this far outside the screen edge
 
 // overload / hard contacts
@@ -168,6 +171,7 @@ let running = false, over = false, paused = false;
 let shedCooldown = 0;
 let spinLoad = 0;
 let jolt = 0, joltDir = 0, joltForce = 0;
+let ffbPull = 0;
 let audioAccum = 0;
 let connectingWheel = false;
 
@@ -181,6 +185,28 @@ function ffbJolt(force, duration, dir) {
   jolt = duration;
   joltDir = dir >= 0 ? 1 : -1;
   joltForce = force;
+}
+
+function magneticPull() {
+  const ps = poles();
+  let torque = 0;
+  for (const o of orbs) {
+    const coreDist = Math.hypot(o.x - CX, o.y - CY);
+    const innerFade = clamp((coreDist - POLE_INNER_REACH) / POLE_R, 0, 1);
+    if (innerFade <= 0) continue;
+    const energy = o.energy !== undefined ? o.energy : 1;
+    for (const { p, aff } of ps) {
+      if (o.kind !== 'power' && aff !== o.pol) continue;
+      const dx = o.x - p.x, dy = o.y - p.y;
+      const d = Math.hypot(dx, dy) || 0.001;
+      if (d >= ATTRACT_R) continue;
+      const scale = o.kind === 'power' ? POWER_PULL_SCALE : 1;
+      const f = PULL * scale * (1 - d / ATTRACT_R) * innerFade * energy;
+      const rx = p.x - CX, ry = p.y - CY;
+      torque += (rx * (dy / d) - ry * (dx / d)) * f;
+    }
+  }
+  return torque / (PULL * BAR_HALF);
 }
 
 // pre-rendered glow sprites (cheap neon bloom)
@@ -247,7 +273,7 @@ function reset(startWave = savedWave()) {
   runTime = Math.max(0, (fromWave - 1) * WAVE_TIME);
   waveModifier = 'normal'; waveNextModifier = null; wavePolFlip = 0;
   waveBanner = null; spawnTimer = 0;
-  running = true; over = false; shedCooldown = 0; spinLoad = 0; jolt = 0; joltForce = 0;
+  running = true; over = false; shedCooldown = 0; spinLoad = 0; jolt = 0; joltForce = 0; ffbPull = 0;
   input.reset();
   audio.init();
   audio.setMusicIntensity(0.2);
@@ -423,7 +449,7 @@ function explode(x, y, big = false) {
     }
   }
   magnet.omega += (x >= CX ? 1 : -1) * EXPLOSION_TORQUE * scale;
-  ffbJolt(big ? 1.7 : 1.15, big ? 0.3 : 0.18, Math.sign(x - CX) || 1);
+  ffbJolt(big ? 1.5 : 1.2, big ? 0.26 : 0.18, Math.sign(x - CX) || 1);
   if (Math.hypot(x - CX, y - CY) < R * 0.6) health -= EXPLOSION_DAMAGE;
   exploded++;
 }
@@ -479,7 +505,7 @@ function powerDetonate(orb) {
   }
 
   magnet.omega += (x >= CX ? 1 : -1) * EXPLOSION_TORQUE * (big ? 1.2 : 0.6);
-  ffbJolt(big ? 1.8 : 1.25, big ? 0.32 : 0.22, Math.sign(x - CX) || 1);
+  ffbJolt(big ? 1.6 : 1.2, big ? 0.28 : 0.2, Math.sign(x - CX) || 1);
 }
 
 function hardCatch(orb) {
@@ -778,6 +804,7 @@ function step(dt) {
       }
       streak = 0;
       audio.hit(panOf(o.x), 1.3);
+      ffbJolt(0.8, 0.16, Math.sign(o.x - CX) || 1);
       if (o.volatile) {
         explode(o.x, o.y, true);
         health -= 24;
@@ -856,8 +883,10 @@ function updateFfb(dt) {
   ffbAccum = 0;
   if (!running) { ffbEl.textContent = 'idle'; return; }
 
+  const targetPull = clamp(magneticPull() * FFB_PULL_GAIN, -FFB_PULL_MAX, FFB_PULL_MAX);
+  ffbPull += (targetPull - ffbPull) * Math.min(1, dt * FFB_PULL_SMOOTH);
   const spinMass = BASE_I + FFB_WEIGHT_GAIN * (inertia() - BASE_I);
-  let force = clamp(-magnet.omega * spinMass * FFB_SPIN_GAIN, -1, 1);
+  let force = clamp(-magnet.omega * spinMass * FFB_SPIN_GAIN + ffbPull, -1, 1);
   if (jolt > 0) { jolt -= dt; force = joltDir * joltForce; }
   if (Math.abs(force) < FFB_DEADZONE) force = 0;
   ffbEl.textContent = force.toFixed(2);
