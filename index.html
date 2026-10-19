@@ -257,8 +257,13 @@
           </div>
           <div class="row">
             <label for="wheelRange">Rotation</label>
-            <input type="range" id="wheelRange" min="180" max="1080" step="30" value="900">
+            <input type="range" id="wheelRange" min="180" max="3000" step="30" value="900">
             <span id="wheelRangeVal">900°</span>
+          </div>
+          <div class="row">
+            <label for="wheelSensitivity">Sensitivity</label>
+            <input type="range" id="wheelSensitivity" min="10" max="300" step="5" value="100">
+            <span id="wheelSensitivityVal">100%</span>
           </div>
           <label class="check"><input type="checkbox" id="ffbInvert"> Invert force</label>
           <button id="disconnectButton" class="ghost hidden">Disconnect wheel</button>
@@ -288,7 +293,7 @@
         <div class="section">Progress</div>
         <p class="help-text">Your highest wave is saved. Start / Retry resumes there; New run begins from wave 1.</p>
         <div class="section">Settings</div>
-        <p class="help-text">Use Settings to adjust touch sensitivity, audio and — when supported — wheel FFB and rotation range. Opening Help or Settings pauses play.</p>
+        <p class="help-text">Use Settings to adjust touch sensitivity, audio and — when supported — wheel FFB, rotation range and sensitivity. Opening Help or Settings pauses play.</p>
       </div>
     </div>
 
@@ -304,6 +309,6 @@
       </div>
     </div>
 
-    <script type="module" src="game.js?v=20261019au"></script>
+    <script type="module" src="game.js?v=20261019b"></script>
   </body>
 </html>

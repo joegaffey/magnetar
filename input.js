@@ -1,4 +1,4 @@
-import { WebHIDWheel } from './vendor/webhid-wheel.js?v=20261019au';
+import { WebHIDWheel } from './vendor/webhid-wheel.js?v=20261019b';
 
 /**
  * Unified one-axis steering input.
@@ -24,6 +24,7 @@ export class SteeringInput {
     this.touchDegPerPx = touchDegPerPx;
     this.gamepadRate = gamepadRate;
     this.gamepadDeadzone = Math.max(0, Math.min(0.9, gamepadDeadzone));
+    this.wheelMultiplier = 1;
 
     this._keys = { left: false, right: false };
     this._pointer = { x: null, width: 1 };
@@ -150,6 +151,7 @@ export class SteeringInput {
       ffbStrength: opts.ffbStrength !== undefined ? opts.ffbStrength : 0.25,
       ffbInvert: opts.ffbInvert !== undefined ? opts.ffbInvert : false
     });
+    this.setWheelMultiplier(opts.wheelMultiplier);
     const dev = await this.wheel.connect();
     if (dev) {
       this.ffbAvailable = true;
@@ -169,6 +171,11 @@ export class SteeringInput {
 
   setFfbInvert(value) {
     if (this.wheel) this.wheel.ffbInvert = !!value;
+  }
+
+  setWheelMultiplier(value) {
+    const v = Number(value);
+    if (Number.isFinite(v)) this.wheelMultiplier = Math.max(0.1, Math.min(3, v));
   }
 
   get ffbActive() {
@@ -192,7 +199,7 @@ export class SteeringInput {
     else if (now - this._lastPointer < 300) this.source = this._pointerKind;
 
     if (this.source === 'wheel' && this.wheel && this.wheel.rotation !== undefined) {
-      this.angle = this.wheel.rotation;
+      this.angle = this.wheel.rotation * this.wheelMultiplier;
     } else if (this.source === 'touch' && this._pointerAngle !== null) {
       this.angle = this._pointerAngle;
     } else if (this.source === 'mouse' && this._pointer.x !== null) {

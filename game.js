@@ -1,5 +1,5 @@
-import { SteeringInput } from './input.js?v=20261019au';
-import { AudioEngine } from './audio.js?v=20261019au';
+import { SteeringInput } from './input.js?v=20261019b';
+import { AudioEngine } from './audio.js?v=20261019b';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -22,6 +22,8 @@ const ffbStrengthVal = document.getElementById('ffbStrengthVal');
 const ffbInvertInput = document.getElementById('ffbInvert');
 const wheelRangeInput = document.getElementById('wheelRange');
 const wheelRangeVal = document.getElementById('wheelRangeVal');
+const wheelSensitivityInput = document.getElementById('wheelSensitivity');
+const wheelSensitivityVal = document.getElementById('wheelSensitivityVal');
 const muteToggle = document.getElementById('muteToggle');
 const volumeInput = document.getElementById('volume');
 const volumeVal = document.getElementById('volumeVal');
@@ -1285,6 +1287,7 @@ connectButton.addEventListener('click', async () => {
     const dev = await input.connectWheel({
       ffbStrength: parseInt(ffbStrengthInput.value) / 100,
       ffbInvert: ffbInvertInput.checked,
+      wheelMultiplier: parseInt(wheelSensitivityInput.value) / 100,
       maxRotation: parseInt(wheelRangeInput.value)
     });
     if (!dev) { statusEl.textContent = 'Connection cancelled'; return; }
@@ -1394,6 +1397,10 @@ ffbInvertInput.addEventListener('change', () => {
 wheelRangeInput.addEventListener('input', () => {
   wheelRangeVal.textContent = wheelRangeInput.value + '\u00b0';
   input.setMaxRotation(parseInt(wheelRangeInput.value));
+});
+wheelSensitivityInput.addEventListener('input', () => {
+  wheelSensitivityVal.textContent = wheelSensitivityInput.value + '%';
+  input.setWheelMultiplier(parseInt(wheelSensitivityInput.value) / 100);
 });
 
 if (touchSensitivityInput) {

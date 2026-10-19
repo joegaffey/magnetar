@@ -29,7 +29,7 @@ A single abstract value: **target angle** `θ` in degrees (may be unbounded for 
 
 | Source | Mapping | FFB | Notes |
 | --- | --- | --- | --- |
-| Wheel / flight stick (WebHID) | absolute axis rotation (±maxRotation/2) | Yes (device-dependent) | Optional; auto-selected when moved |
+| Wheel / flight stick (WebHID) | absolute axis rotation (±maxRotation/2) × wheel multiplier | Yes (device-dependent) | Optional; auto-selected when moved |
 | Keyboard | hold ←/→ or A/D, integrate ±rate (unbounded) | No | Best for continuous spin |
 | Mouse | pointer X → absolute angle (bounded ±range) | No | Simple aiming |
 | Touch | drag delta → unbounded angle; anchors on touch-down | No | Mobile/tablet; sensitivity adjustable |
@@ -271,7 +271,7 @@ Tuning goals: ~30–45 s to first "heavy" feel; fast spins naturally shed the ou
 - **Wave announcement:** a brief, non-blocking canvas banner below the HUD at wave start and during the lull (next modifier), plus an audio chime and HUD `Wave` field.
 - HUD (top-left): neon color-coded `Health`, `Mass`, `Score`, `Wave`, `Input` (source + FFB), `FFB`; brand wordmark.
 - Top-right: **Connect wheel** (only with WebHID support; regular until a previously authorized device is found, then highlighted), **Settings**, **Help**, **Restart** + status. While connected, the button is replaced by the device name; **Settings → Wheel / stick** offers disconnect. The browser device picker pauses play until it closes. Without WebHID, wheel/stick controls are hidden.
-- **Settings modal:** Controls (touch sensitivity), Audio (Mute, Master, Music) and Wheel (disconnect when connected, FFB strength, rotation range); opening it **pauses play** and stops FFB; close via ×, backdrop or Esc.
+- **Settings modal:** Controls (touch sensitivity), Audio (Mute, Master, Music) and Wheel (disconnect when connected, FFB strength, rotation range up to 3000°, wheel sensitivity, force inversion); opening it **pauses play** and stops FFB; close via ×, backdrop or Esc.
 - **Help modal:** controls, orb legend (amber/blue, red unstable, green power), overload and wave notes; accessible from the topbar and start/game-over overlays; opening it **pauses play**; close via ×, backdrop or Esc.
 - Game over overlay: score, wave reached, caught/unstable counts, **Retry wave N**, **New run** (when progress exists) and **Help**.
 - Audio suspends when the tab is hidden and resumes on return.
