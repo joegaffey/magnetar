@@ -40,6 +40,12 @@ function report64(bytes) {
   return b;
 }
 
+function report7(bytes) {
+  const b = new Uint8Array(7);
+  for (let i = 0; i < bytes.length; i++) b[i] = bytes[i] & 0xff;
+  return b;
+}
+
 function parseThrustmaster(data, wheel) {
   wheel.steering = data.getUint8(0) | (data.getUint8(1) << 8);
   wheel.rotation = (wheel.steering / 65535 - 0.5) * wheel.maxRotation;
@@ -232,6 +238,9 @@ function buildPidFfb(device) {
 
   let effectId = 1;
   let ready = null;
+  let active = false;
+  let draining = false;
+  const queue = [];
   const info = {
     setEffect: setEffect.id,
     setConstant: setConstant.id,
@@ -297,42 +306,51 @@ function buildPidFfb(device) {
     return ready;
   };
 
-  const dispatch = async (device, value, wheel) => {
-    try {
-      await init(device);
-      const strength = (wheel && wheel.ffbStrength !== undefined) ? wheel.ffbStrength : 1;
-      const mag = Math.max(-magMax, Math.min(magMax, Math.round(value * strength * magMax)));
-
-      const se = new Uint8Array(setEffect.len);
-      writeBits(se, seBlock.offset, seBlock.size, effectId);
-      writeBits(se, typeField.offset, typeField.size, constantType);
-      if (durationField) writeBits(se, durationField.offset, durationField.size, Math.pow(2, durationField.size) - 1);
-      if (gainField) writeBits(se, gainField.offset, gainField.size, gainField.max > 0 ? gainField.max : 255);
-      if (directionEnableField) writeBits(se, directionEnableField.offset, directionEnableField.size, 1);
-      if (axisXField) writeBits(se, axisXField.offset, axisXField.size, 1);
-      await device.sendReport(setEffect.id, se);
-
-      const sc = new Uint8Array(setConstant.len);
-      writeBits(sc, constBlock.offset, constBlock.size, effectId);
-      writeBits(sc, magField.offset, magField.size, mag);
-      await device.sendReport(setConstant.id, sc);
-
-      const eo = new Uint8Array(effectOp.len);
-      writeBits(eo, opBlock.offset, opBlock.size, effectId);
-      writeBits(eo, opField.offset, opField.size, startValue);
-      if (loopField) writeBits(eo, loopField.offset, loopField.size, 1);
-      await device.sendReport(effectOp.id, eo);
-      info.lastValue = value;
-      info.lastMagnitude = mag;
-    } catch (e) {
-      info.error = String(e && e.message ? e.message : e);
-      throw e;
-    }
+  const magnitudeFor = (value, wheel) => {
+    const strength = (wheel && wheel.ffbStrength !== undefined) ? wheel.ffbStrength : 1;
+    return Math.max(-magMax, Math.min(magMax, Math.round(value * strength * magMax)));
   };
 
-  const stop = async (device) => {
-    if (!ready) return;
-    await ready;
+  const writeMagnitude = async (device, value, wheel) => {
+    const mag = magnitudeFor(value, wheel);
+    const sc = new Uint8Array(setConstant.len);
+    writeBits(sc, constBlock.offset, constBlock.size, effectId);
+    writeBits(sc, magField.offset, magField.size, mag);
+    await device.sendReport(setConstant.id, sc);
+    info.lastValue = value;
+    info.lastMagnitude = mag;
+  };
+
+  const startEffect = async (device, value, wheel) => {
+    const mag = magnitudeFor(value, wheel);
+
+    const se = new Uint8Array(setEffect.len);
+    writeBits(se, seBlock.offset, seBlock.size, effectId);
+    writeBits(se, typeField.offset, typeField.size, constantType);
+    if (durationField) writeBits(se, durationField.offset, durationField.size, Math.pow(2, durationField.size) - 1);
+    if (gainField) writeBits(se, gainField.offset, gainField.size, gainField.max > 0 ? gainField.max : 255);
+    if (directionEnableField) writeBits(se, directionEnableField.offset, directionEnableField.size, 1);
+    if (axisXField) writeBits(se, axisXField.offset, axisXField.size, 1);
+    await device.sendReport(setEffect.id, se);
+
+    const sc = new Uint8Array(setConstant.len);
+    writeBits(sc, constBlock.offset, constBlock.size, effectId);
+    writeBits(sc, magField.offset, magField.size, mag);
+    await device.sendReport(setConstant.id, sc);
+
+    const eo = new Uint8Array(effectOp.len);
+    writeBits(eo, opBlock.offset, opBlock.size, effectId);
+    writeBits(eo, opField.offset, opField.size, startValue);
+    if (loopField) writeBits(eo, loopField.offset, loopField.size, 1);
+    await device.sendReport(effectOp.id, eo);
+
+    active = true;
+    info.lastValue = value;
+    info.lastMagnitude = mag;
+  };
+
+  const stopEffect = async (device) => {
+    active = false;
     const eo = new Uint8Array(effectOp.len);
     writeBits(eo, opBlock.offset, opBlock.size, effectId);
     writeBits(eo, opField.offset, opField.size, stopValue);
@@ -341,9 +359,98 @@ function buildPidFfb(device) {
     writeBits(sc, constBlock.offset, constBlock.size, effectId);
     writeBits(sc, magField.offset, magField.size, 0);
     await device.sendReport(setConstant.id, sc);
+    info.lastValue = 0;
+    info.lastMagnitude = 0;
   };
 
-  return { constant: dispatch, stop, info };
+  const fail = (e) => {
+    active = false;
+    info.error = String(e && e.message ? e.message : e);
+    return e;
+  };
+
+  const drain = async () => {
+    if (draining) return;
+    draining = true;
+    try {
+      while (queue.length) {
+        const first = queue.shift();
+
+        if (first.kind === 'fast') {
+          const waiters = [first];
+          let latest = first;
+          while (queue.length && queue[0].kind === 'fast') {
+            latest = queue.shift();
+            waiters.push(latest);
+          }
+          try {
+            await init(latest.device);
+            if (active) await writeMagnitude(latest.device, latest.value, latest.wheel);
+            else await startEffect(latest.device, latest.value, latest.wheel);
+            for (const waiter of waiters) waiter.resolve();
+          } catch (e) {
+            const error = fail(e);
+            for (const waiter of waiters) waiter.reject(error);
+          }
+          continue;
+        }
+
+        try {
+          if (first.kind === 'stop') {
+            if (ready) {
+              await ready;
+              await stopEffect(first.device);
+            }
+          } else {
+            await init(first.device);
+            await startEffect(first.device, first.value, first.wheel);
+          }
+          first.resolve();
+        } catch (e) {
+          first.reject(fail(e));
+        }
+      }
+    } finally {
+      draining = false;
+    }
+  };
+
+  const enqueue = (kind, device, value, wheel) => new Promise((resolve, reject) => {
+    queue.push({ kind, device, value, wheel, resolve, reject });
+    drain();
+  });
+
+  const dispatch = (device, value, wheel) => enqueue('constant', device, value, wheel);
+  const dispatchFast = (device, value, wheel) => enqueue('fast', device, value, wheel);
+  const stop = (device) => enqueue('stop', device);
+
+  return { constant: dispatch, constantFast: dispatchFast, stop, info };
+}
+
+function logitechForceLevel(value, wheel) {
+  const strength = (wheel && wheel.ffbStrength !== undefined) ? wheel.ffbStrength : 1;
+  const force = Math.max(-1, Math.min(1, value * strength));
+  return Math.round((force + 1) * 127.5);
+}
+
+function createLogitechClassicFfb() {
+  const send = (device, bytes) => device.sendReport(0, report7(bytes));
+
+  const init = async (device, wheel) => {
+    await send(device, [0xf5, 0, 0, 0, 0, 0, 0]);
+    const range = Math.max(40, Math.min(900, Math.round(wheel.maxRotation)));
+    await send(device, [0xf8, 0x81, range & 0xff, (range >> 8) & 0xff, 0, 0, 0]);
+  };
+
+  const constant = async (device, value, wheel) => {
+    await send(device, [0x11, 0x00, logitechForceLevel(value, wheel), 0, 0, 0, 0]);
+  };
+
+  const stop = async (device) => {
+    await send(device, [0x13, 0, 0, 0, 0, 0, 0]);
+  };
+
+  return { init, constant, constantFast: constant, stop };
 }
 
 const defaultProfiles = [
@@ -353,9 +460,20 @@ const defaultProfiles = [
     parse: parseThrustmaster
   },
   {
+    name: 'Logitech G29 Driving Force',
+    vendorId: 0x046d,
+    productIds: [0xc24f, 0xc260],
+    maxRotation: 900,
+    ffb: createLogitechClassicFfb()
+  },
+  {
     name: 'Logitech Driving Force GT',
+    vendorId: 0x046d,
+    productId: 0xc29a,
+    maxRotation: 900,
     match: /driving force gt/i,
-    parse: parseLogitechDFGT
+    parse: parseLogitechDFGT,
+    ffb: createLogitechClassicFfb()
   },
   {
     name: 'CAMMUS C5',
@@ -391,9 +509,12 @@ const defaultProfiles = [
 const registeredProfiles = defaultProfiles.slice();
 
 function profileMatches(profile, device) {
-  if (profile.vendorId !== undefined && device.vendorId === profile.vendorId &&
-      (profile.productId === undefined || device.productId === profile.productId)) {
-    return true;
+  if (profile.vendorId !== undefined && device.vendorId === profile.vendorId) {
+    const hasProductId = profile.productId !== undefined;
+    const hasProductIds = profile.productIds && profile.productIds.length > 0;
+    if (!hasProductId && !hasProductIds) return true;
+    if (hasProductId && device.productId === profile.productId) return true;
+    if (hasProductIds && profile.productIds.includes(device.productId)) return true;
   }
   return !!(profile.match && profile.match.test(device.productName || ''));
 }
@@ -489,8 +610,14 @@ export class WebHIDWheel {
     this.ffb = {
       supported: caps,
       constant: (value) => this.setConstantForce(value),
+      constantFast: (value) => this.setConstantForceFast(value),
       stop: () => this.stopEffects()
     };
+
+    if (this.profile && this.profile.ffb && this.profile.ffb.init) {
+      try { await this.profile.ffb.init(this.device, this); }
+      catch (e) { this.emit('error', e); }
+    }
 
     this.device.oninputreport = (report) => this.processWheelReport(report);
     this.emit('connect', this.device);
@@ -499,6 +626,7 @@ export class WebHIDWheel {
 
   async disconnect() {
     const dev = this.device;
+    if (dev) { try { await this.stopEffects(); } catch (e) { /* noop */ } }
     if (dev && dev.opened) { try { await dev.close(); } catch (e) { /* noop */ } }
     this.device = null;
     if (dev) this.emit('disconnect', dev);
@@ -540,6 +668,20 @@ export class WebHIDWheel {
       return this.profile.ffb.constant(this.device, force, this);
     if (this.pidFfb)
       return this.pidFfb.constant(this.device, force, this);
+  }
+
+  async setConstantForceFast(value) {
+    if (!this.device) return;
+    const force = this.ffbInvert ? -value : value;
+    if (this.profile && this.profile.ffb) {
+      if (this.profile.ffb.constantFast)
+        return this.profile.ffb.constantFast(this.device, force, this);
+      if (this.profile.ffb.constant)
+        return this.profile.ffb.constant(this.device, force, this);
+      return;
+    }
+    if (this.pidFfb)
+      return this.pidFfb.constantFast(this.device, force, this);
   }
 
   async stopEffects() {

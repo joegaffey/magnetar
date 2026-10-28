@@ -1,4 +1,4 @@
-import { WebHIDWheel } from './vendor/webhid-wheel.js?v=20261019e';
+import { WebHIDWheel } from './vendor/webhid-wheel.js?v=20261028';
 
 /**
  * Unified one-axis steering input.
@@ -217,7 +217,7 @@ export class SteeringInput {
 
   applyForce(value) {
     if (this.ffbActive && this.wheel && this.wheel.ffb && this.wheel.ffb.supported.constant) {
-      this.wheel.ffb.constant(value).catch(() => {});
+      this.wheel.ffb.constantFast(value).catch(() => {});
     }
   }
 
